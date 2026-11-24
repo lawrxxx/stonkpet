@@ -6,6 +6,7 @@
  * through esc(); everything else is our own constant copy.
  */
 import { held, money, nm, CHG, type Card, type SheetKey, type Store } from "./store";
+import { clock, opensWhen, pct, priceOf } from "./prices";
 import { ABOUT, findListedOnly, findNotListed, findStock, nameOf, ROBOT_TICKERS, TRADABLE_COUNT } from "./stocks";
 
 export const esc = (s: unknown) =>
@@ -74,6 +75,13 @@ export function reply(text: string, s: Store): Reply {
     return { html: `${ABOUT[k] ?? ""}${src("company reports")}<br>${tag("My take")}<br>${k in p.w ? `It's ${Math.round(h[k] * 100)}% of your stuff because it fits "${esc(p.theme)}".` : `It's not in your plan because it doesn't really fit "${esc(p.theme)}".`}`, tag: "Fact" };
   if (/why/.test(t))
     return { html: `They're all live on Base and fit what you asked for (${esc(p.theme)}).${src("Base Tokenized Stocks API")}<br>${tag("My take")}<br>${lead} fits best, so it leads.`, tag: "Fact" };
+  if ((/(best|top|winner)/.test(t) || /(worst|loser|weakest)/.test(t)) && s.board) {
+    const moved = Object.keys(p.w).filter((x) => priceOf(s.board, x)?.dayChangePct != null);
+    const dc = (x: string) => priceOf(s.board, x)!.dayChangePct!;
+    moved.sort((a, b) => dc(b) - dc(a));
+    if (moved.length)
+      return { html: `Best today: ${NAMES(moved[0])}, ${pct(dc(moved[0]))}.<br>Worst: ${NAMES(moved[moved.length - 1])}, ${pct(dc(moved[moved.length - 1]))}.<br>One bad day isn't a reason to sell. I'm watching it.${src("Chainlink price feeds on Base")}` };
+  }
   if (/(best|top|winner)/.test(t) || /(worst|loser|weakest)/.test(t)) {
     const ks = Object.keys(p.w).sort((a, b) => (CHG[b] ?? 0) - (CHG[a] ?? 0)), b = ks[0], w = ks[ks.length - 1];
     const f = (x: string) => `${(CHG[x] ?? 0) > 0 ? "+" : ""}${CHG[x] ?? 0}%`;
@@ -103,14 +111,27 @@ export function reply(text: string, s: Store): Reply {
   if (/(how are you|you ok|you good|feeling|mood)/.test(t))
     return { html: s.wx === "rain" ? `Bit gloomy, honestly. Rough day in the market. But we're still up for the month, so I'm not panicking.` : s.wx === "night" ? `Sleepy. Market's closed. Ask me anything though.` : `Pretty great! The sun's out and we're up 8% this month.` };
   if (/(who are you|your name|what are you)/.test(t)) return { html: `I'm ${esc(nm(s))}, your pet. I research stocks, buy what fits your plan, and always ask before anything big.` };
-  if (/(price|how much is|cost of)/.test(t) && k) return { html: `I don't have a live price in this demo. In the real app I'd pull it from the Chainlink feed on Base.` };
+  if (/(price|how much is|cost of)/.test(t) && k) {
+    const q = priceOf(s.board, k);
+    if (!q || q.price === null) return { html: `I can't get a live price for ${NAMES(k)} right now, and I won't guess.` };
+    const when = q.updatedAt ? clock(q.updatedAt) : "";
+    const note = q.status === "closed" ? " That's the last close, since the market's shut." : q.status === "stale" ? " Heads up, the feed looks frozen, so I wouldn't trade on it." : "";
+    return { html: `One ${NAMES(k)} token is $${q.price.toFixed(2)}${q.dayChangePct !== null ? `, ${pct(q.dayChangePct)} today` : ""}.${note}${src(`Chainlink price feed on Base, ${when}`)}`, tag: "Fact" };
+  }
   if (/(how am i|how are we|doing|performance|up or down|status|how'?s it going|gains|profit|made any money|make money|made money|making money|earn|returns|winning|losing)/.test(t))
     return { html: `We're up 8% this month. You're a quarter of the way to $1,000.${s.paused ? " Trading is paused, by the way." : ""}` };
-  if (/(news|happening|today|update|morning)/.test(t)) return { html: `${lead} had a big week. Earnings season is here, so it could be bumpy for a few weeks. Nothing you need to do.`, tag: "Today" };
+  if (/(news|happening|today|update|morning)/.test(t)) {
+    const moved = (s.board?.prices ?? []).filter((x) => x.dayChangePct !== null).sort((a, b) => Math.abs(b.dayChangePct!) - Math.abs(a.dayChangePct!));
+    if (!moved.length) return { html: `I can't reach live prices right now, so no update from me. I'd rather say nothing than guess.`, tag: "Today" };
+    return { html: `Biggest mover on Base ${s.board!.market.open ? "today" : "last session"}: ${NAMES(moved[0].ticker)}, ${pct(moved[0].dayChangePct!)}. Nothing you need to do.${src("Chainlink price feeds on Base")}<br>I don't read news headlines yet.`, tag: "Today" };
+  }
   if (/(what is|what's|whats|explain|eli5|simple)/.test(t) && /(stock|token|share|base)/.test(t))
     return { html: `A stock is a tiny piece of a company. If the company does well, your piece is worth more.<br><br>Here, each stock is a token on Base, backed by a real share held by a regulated company. You own it like any other token.` };
   if (/(fee|cost|charge)/.test(t)) return { html: `Network fees are covered. If you pay in ETH or cbBTC, the swap can cost a little in price difference. I show you before you confirm.` };
-  if (/(sleep|night|closed|weekend)/.test(t)) return { html: `Stock markets close at night and on weekends. Prices freeze, so I don't trade then. Anything you feed waits till morning.` };
+  if (/(sleep|night|closed|weekend|market open)/.test(t)) {
+    const now = s.board ? (s.board.market.open ? " Right now it's open." : ` It opens ${opensWhen(s.board)}.`) : "";
+    return { html: `Stock markets close at night and on weekends. Prices freeze, so I don't trade then. Anything you feed waits till the open.${now}` };
+  }
   if (/\b(hi|hello|hey|sup|yo)\b/.test(t))
     return { html: `Hey! ${s.wx === "rain" ? "Bit of a gloomy day, but I'm holding steady." : s.wx === "night" ? "*yawn* Market's closed, but I'm here." : "Feeling good today."} What's up?` };
   if (/thank/.test(t)) return { html: `Anytime.` };

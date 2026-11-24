@@ -3,6 +3,7 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { buildPlan, cashOf, fit, leadOf, type Plan, type Weights } from "./plan";
 import { ABOUT, nameOf } from "./stocks";
+import type { PriceBoard } from "./server/prices";
 
 /**
  * Client state for milestone 1 (mock data, no chain). Same shape as the demo's `st`
@@ -61,7 +62,11 @@ type State = {
   tok: Tok;
   why: "facts" | "assume" | "opinion";
   trimmed: boolean | null; // null = the "trim NVIDIA?" card is still waiting
+  /** Effective weather. Derived from live market data by the Shell unless the user is previewing. */
   wx: Wx;
+  wxPreview: Wx | null;
+  /** Latest price board (not persisted). */
+  board: PriceBoard | null;
   total: number;
   wallet: Record<Tok, number>;
   paused: boolean;
@@ -100,7 +105,7 @@ export type Store = State & Actions;
 const initial: State = {
   ready: false, eligible: false, name: "Mochi", pers: "balanced", cap: 30, ask: 25,
   brief: "AI and robots. Skip Tesla.", diet: "ai", skipCrypto: false, amt: 20, tok: "USDC", why: "facts",
-  trimmed: null, wx: "sun", total: 248.6, wallet: { USDC: 120, ETH: 340, cbBTC: 90 }, paused: false, weekly: 10,
+  trimmed: null, wx: "sun", wxPreview: null, board: null, total: 248.6, wallet: { USDC: 120, ETH: 340, cbBTC: 90 }, paused: false, weekly: 10,
   auto: { reb: true, weekly: true, tp: false }, log: [], plan: null, co: 25, rc: 0, msgs: [], guess: null, ci: 0, sheet: null, next: null,
 };
 
@@ -146,7 +151,7 @@ export const useStore = create<Store>()(
           set({
             log: [], trimmed: null,
             msgs: [
-              { id: uid(), from: "pet", html: `${lead} had a big week. It's now ${leadNow}% of everything, and your max is ${s.cap}%.` },
+              { id: uid(), from: "pet", html: `${lead} has grown to ${leadNow}% of everything, and your max is ${s.cap}%.` },
               {
                 id: uid(), from: "pet", html: "",
                 card: { title: `Mind if I sell $14.92 of ${lead}?`, body: "Puts it back where we planned. The money goes into your other stocks.", yes: "Go for it", action: { type: "trim" }, status: "pending" },
@@ -274,7 +279,7 @@ export const useStore = create<Store>()(
       name: "stonkpet-mock",
       version: 1,
       storage: createJSONStorage(() => localStorage),
-      partialize: ({ sheet, ready, next, ...rest }) => rest,
+      partialize: ({ sheet, ready, next, board, wx, wxPreview, ...rest }) => rest,
       skipHydration: true,
     },
   ),

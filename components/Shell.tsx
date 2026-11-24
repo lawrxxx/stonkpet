@@ -4,6 +4,7 @@ import { useEffect, useRef, type ReactNode } from "react";
 import { useStore } from "@/lib/store";
 import { NEEDS_PLAN, SCREENS, TABS, useGo, type Screen } from "./nav";
 import { Sheets } from "./Sheets";
+import { marketWeather, usePriceBoard } from "@/lib/prices";
 
 const icons: Record<string, ReactNode> = {
   home: <path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" />,
@@ -56,6 +57,15 @@ export function Shell({ children }: { children: ReactNode }) {
     if (sheet) lastFocus.current = document.activeElement as HTMLElement;
     else lastFocus.current?.focus?.();
   }, [sheet]);
+
+  // The weather is the market: live prices drive it unless the user is previewing.
+  const board = usePriceBoard().data ?? null;
+  const plan = useStore((s) => s.plan);
+  const wxPreview = useStore((s) => s.wxPreview);
+  useEffect(() => {
+    const live = marketWeather(board, plan?.w);
+    useStore.setState({ board, wx: wxPreview ?? live ?? "sun" });
+  }, [board, plan, wxPreview]);
 
   const night = wx === "night" && TABS.concat("feed").includes(screen);
   return (

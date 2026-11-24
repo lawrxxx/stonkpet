@@ -2,23 +2,35 @@
 import { Pet } from "@/components/Pet";
 import { SceneSvg } from "@/components/Scene";
 import { useGo } from "@/components/nav";
+import { opensWhen, pct, planDayChange } from "@/lib/prices";
 import { nm, useStore, type Wx } from "@/lib/store";
 
-const WX: Wx[] = ["sun", "rain", "night"];
+/** Tapping the label previews other weather, then returns to live. */
+const CYCLE: (Wx | null)[] = [null, "sun", "rain", "night"];
 const LBL = { sun: "Sunny · market's up", rain: "Rainy · rough day", night: "Night · market's closed" };
-const MOOD = { sun: "Feeling great. Fed 4 weeks in a row.", rain: "A bit gloomy. Holding steady, not panicking.", night: "Asleep. Prices freeze at night, so no trades till morning." };
 
 export default function Home() {
   const s = useStore();
   const go = useGo();
   const w = s.wx;
+  const b = s.board;
+  const today = b && s.plan ? planDayChange(b, s.plan.w) : null;
+  const preview = s.wxPreview !== null;
+  const mood = {
+    sun: "Feeling great. Fed 4 weeks in a row.",
+    rain: "A bit gloomy. Holding steady, not panicking.",
+    night: b && !preview ? `Asleep. The market opens ${opensWhen(b)}, so no trades till then.` : "Asleep. Prices freeze at night, so no trades till morning.",
+  }[w];
+  const label = preview ? `${LBL[w]} · preview` : b ? LBL[w] : "Checking the market…";
+
   return (
     <section className="scr on" aria-label="Home">
       <div className={"scene fluid" + (w === "night" ? " sleep" : "")}>
         <SceneSvg w={w} />
         <div className="pet"><Pet mood={w === "night" ? "sleep" : w === "rain" ? "sad" : "happy"} size={150} /></div>
-        <button className="lbl" onClick={() => s.set({ wx: WX[(WX.indexOf(w) + 1) % 3] })} aria-label={`${LBL[w]}. Tap to preview other weather (sample).`}>
-          {LBL[w]}  ↻
+        <button className="lbl" onClick={() => s.set({ wxPreview: CYCLE[(CYCLE.indexOf(s.wxPreview) + 1) % CYCLE.length] })}
+          aria-label={`${label}. Tap to preview other weather.`}>
+          {label}  ↻
         </button>
         <button className="ib" onClick={() => s.open("share")} aria-label="Share your pet">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" /></svg>
@@ -35,12 +47,14 @@ export default function Home() {
           </span>
         </span>
       </div>
-      <p style={{ fontSize: 16, marginTop: 2 }}>{MOOD[w]}</p>
+      <p style={{ fontSize: 16, marginTop: 2 }}>{mood}</p>
       <div className="list" style={{ marginTop: 16, padding: "14px 18px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span><span className="mut sm" style={{ display: "block" }}>Worth</span><span className="big" style={{ fontSize: 24 }}>${s.total.toFixed(2)}</span></span>
+        <span><span className="mut sm" style={{ display: "block" }}>Worth · sample</span><span className="big" style={{ fontSize: 24 }}>${s.total.toFixed(2)}</span></span>
         <span style={{ textAlign: "right" }}>
-          <span className="mut sm" style={{ display: "block" }}>{w === "rain" ? "Today" : "This month"}</span>
-          <span className={w === "rain" ? "down" : "up"} style={{ font: "600 22px Fredoka,system-ui,sans-serif" }}>{w === "rain" ? "−3.1%" : "+8.0%"}</span>
+          <span className="mut sm" style={{ display: "block" }}>{b && !b.market.open ? "Last session" : "Today"}</span>
+          <span className={today === null ? "mut" : today < 0 ? "down" : "up"} style={{ font: "600 22px Fredoka,system-ui,sans-serif" }}>
+            {today === null ? "—" : pct(today)}
+          </span>
         </span>
       </div>
       <div className="grow" style={{ minHeight: 14 }} />

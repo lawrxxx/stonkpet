@@ -6,6 +6,7 @@ import { nameOf } from "@/lib/stocks";
 import { Pet } from "./Pet";
 import { useGo } from "./nav";
 import { useWallet } from "@/lib/wallet";
+import { clock, opensWhen, pct, planDayChange, priceOf } from "@/lib/prices";
 import { Deposit, SignIn } from "./WalletSheets";
 
 const ADDR = "0x7a3F…9C1e";
@@ -145,13 +146,13 @@ function Body({ k, onSettled }: { k: SheetKey; onSettled: () => void }) {
         <h2 id="sheetT">Morning!</h2>
         <p className="mut sm">{name}, 7:30am</p>
         <div className="list" style={{ marginTop: 14 }}>
-          <div className="row blk"><span className="tag">Mood</span><p>Pretty good. We&apos;re up 8% this month.</p></div>
+          <NoteMood />
           <div className="row blk">
-            <span className="tag">Big news</span>
-            <p>{p && nameOf(p.lead)} had a big week. {s.trimmed ? "You okayed a trim, so we're back in line." : "It went over your max, so I asked about selling a bit."}</p>
-            <p className="src">Source: Chainlink price feed on Base</p>
+            <span className="tag">Your rules</span>
+            <p>{p && nameOf(p.lead)} grew past your {s.cap}% max. {s.trimmed ? "You okayed a trim, so we're back in line." : "I asked about selling a bit."}</p>
+            <LeadPrice ticker={p?.lead} />
           </div>
-          <div className="row blk"><span className="tag">Keeping an eye on</span><p>Earnings season is here. Could be a bumpy few weeks.</p></div>
+          <NoteMovers />
         </div>
         <button className="btn alt" style={{ marginTop: 14 }} onClick={() => go("chat")}>Open chat</button>
       </>);
@@ -204,6 +205,43 @@ function Body({ k, onSettled }: { k: SheetKey; onSettled: () => void }) {
         </div>
       </>);
   }
+}
+
+/** Mood from the real plan-weighted move. No number if we don't have one. */
+function NoteMood() {
+  const b = useStore((s) => s.board);
+  const plan = useStore((s) => s.plan);
+  const d = plan ? planDayChange(b, plan.w) : null;
+  const when = b && !b.market.open ? "last session" : "today";
+  const text = d === null ? "Couldn't get live prices just now, so no mood report." : d >= 0 ? `Pretty good. Your stocks are ${pct(d)} ${when}.` : `A bit gloomy. Your stocks are ${pct(d)} ${when}. Holding steady.`;
+  return <div className="row blk"><span className="tag">Mood</span><p>{text}</p>{d !== null && <p className="src">Source: Chainlink price feeds on Base</p>}</div>;
+}
+
+/** Biggest real mover across every stock on Base with a price feed. */
+function NoteMovers() {
+  const b = useStore((s) => s.board);
+  const moved = (b?.prices ?? []).filter((x) => x.dayChangePct !== null).sort((x, y) => Math.abs(y.dayChangePct!) - Math.abs(x.dayChangePct!));
+  if (!b || !moved.length) return null;
+  const top = moved[0];
+  return (
+    <div className="row blk">
+      <span className="tag">Keeping an eye on</span>
+      <p>Biggest mover on Base {b.market.open ? "today" : "last session"}: {nameOf(top.ticker)}, {pct(top.dayChangePct!)}.{b.market.open ? "" : ` Market opens ${opensWhen(b)}.`}</p>
+      <p className="src">Source: Chainlink price feeds on Base</p>
+    </div>
+  );
+}
+
+/** Real price line for the note, with its source and time. Says nothing rather than inventing one. */
+function LeadPrice({ ticker }: { ticker?: string }) {
+  const b = useStore((s) => s.board);
+  const q = ticker ? priceOf(b, ticker) : null;
+  if (!ticker || !q || q.price === null || !q.updatedAt) return <p className="src">Live price unavailable right now.</p>;
+  return (
+    <p className="src">
+      {nameOf(ticker)} is ${q.price.toFixed(2)}{q.dayChangePct !== null ? `, ${pct(q.dayChangePct)} today` : ""}. Source: Chainlink price feed on Base, {clock(q.updatedAt)}
+    </p>
+  );
 }
 
 /** 18+ and region check. Coinbase tokenized stocks are only for eligible people outside the US. */

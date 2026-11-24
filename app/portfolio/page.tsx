@@ -3,6 +3,7 @@ import { held, nm, useStore } from "@/lib/store";
 import { nameOf } from "@/lib/stocks";
 import { CHAIN, short } from "@/lib/chain";
 import { useWallet } from "@/lib/wallet";
+import { clock, pct, priceOf } from "@/lib/prices";
 
 export default function Portfolio() {
   const s = useStore();
@@ -31,7 +32,10 @@ export default function Portfolio() {
             <div className="row blk" key={k}>
               <span className="sp"><span style={{ fontWeight: 600 }}>{nameOf(k)}</span><span style={{ fontWeight: 600 }}>${(s.total * w[k]).toFixed(2)}</span></span>
               <div className="bar"><i style={{ width: v + "%", ...(over ? { background: "var(--down)" } : {}) }} /><span className="cap" style={{ left: s.cap + "%" }} /></div>
-              <span style={{ fontSize: 13 }} className={over ? "down" : "mut"}>{v}%{over ? " · over your max" : ""}</span>
+              <span className="sp" style={{ fontSize: 13 }}>
+                <span className={over ? "down" : "mut"}>{v}%{over ? " · over your max" : ""}</span>
+                <PriceTag ticker={k} />
+              </span>
             </div>
           );
         })}
@@ -62,5 +66,20 @@ export default function Portfolio() {
         <br />Sample data · testnet build
       </p>
     </section>
+  );
+}
+
+/** Live Chainlink price and today's move for one stock, or an honest "no price". */
+function PriceTag({ ticker }: { ticker: string }) {
+  const b = useStore((s) => s.board);
+  const p = priceOf(b, ticker);
+  if (!b) return <span className="mut">…</span>;
+  if (!p || p.price === null) return <span className="mut">no live price</span>;
+  const d = p.dayChangePct;
+  return (
+    <span className="mut" title={p.updatedAt ? `Chainlink, updated ${clock(p.updatedAt)}` : undefined}>
+      ${p.price.toFixed(2)}{d !== null && <> · <span className={d < 0 ? "down" : "up"}>{pct(d)}</span></>}
+      {p.status === "stale" && " · frozen"}
+    </span>
   );
 }
