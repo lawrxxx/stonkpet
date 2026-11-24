@@ -1,7 +1,8 @@
 "use client";
 import { useCallback } from "react";
-import { erc20Abi, formatUnits, parseAbi, type Hex } from "viem";
-import { useBalance, useConnect, useConnection, useConnectors, useDisconnect, useReadContract, useSendCalls, useWaitForCallsStatus } from "wagmi";
+import { erc20Abi, formatUnits, numberToHex, parseAbi, type Hex } from "viem";
+import { createSiweMessage } from "viem/siwe";
+import { useBalance, useConnect, useConnection, useConnectors, useDisconnect, useReadContract, useSendCalls, useSignMessage, useWaitForCallsStatus } from "wagmi";
 import { DATA_SUFFIX } from "./builderCode";
 import { CHAIN, FEEDS, TOKENS } from "./chain";
 
@@ -11,18 +12,39 @@ export function useWallet() {
   const connectors = useConnectors();
   const connect = useConnect();
   const disconnect = useDisconnect();
+  const signMessage = useSignMessage();
+  /**
+   * One passkey prompt: connect the Base Account and sign a Sign-In with Ethereum
+   * message, then the server verifies it and sets a session cookie.
+   */
   const signIn = useCallback(async () => {
     const c = connectors[0];
     if (!c) throw new Error("No wallet connector");
-    await connect.mutateAsync({ connector: c, chainId: CHAIN.id });
-  }, [connectors, connect]);
+    const { nonce } = await (await fetch("/api/auth/nonce", { cache: "no-store" })).json();
+    if (!nonce) { await connect.mutateAsync({ connector: c, chainId: CHAIN.id }); return; } // server sessions not set up yet
+    const res = await connect.mutateAsync({
+      connector: c,
+      chainId: CHAIN.id,
+      capabilities: { signInWithEthereum: { nonce, chainId: numberToHex(CHAIN.id) } },
+      withCapabilities: true,
+    });
+    const acct = res.accounts[0] as { address: `0x${string}`; capabilities?: { signInWithEthereum?: { message: string; signature: Hex } } };
+    let siwe = acct.capabilities?.signInWithEthereum;
+    if (!siwe) {
+      // Wallet didn't sign during connect: ask for a plain SIWE signature instead.
+      const message = createSiweMessage({ address: acct.address, chainId: CHAIN.id, domain: window.location.host, nonce, uri: window.location.origin, version: "1", statement: "Sign in to stonkpet." });
+      siwe = { message, signature: await signMessage.mutateAsync({ message }) };
+    }
+    const v = await fetch("/api/auth/verify", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(siwe) });
+    if (!v.ok) throw new Error((await v.json().catch(() => ({}))).message ?? "Sign-in failed");
+  }, [connectors, connect, signMessage]);
   return {
     address,
     connected: status === "connected" && !!address,
-    connecting: status === "connecting" || status === "reconnecting" || connect.isPending,
+    connecting: status === "connecting" || status === "reconnecting" || connect.isPending || signMessage.isPending,
     error: connect.error,
     signIn,
-    signOut: () => disconnect.mutate(),
+    signOut: () => { void fetch("/api/auth/me", { method: "DELETE" }); disconnect.mutate(); },
   };
 }
 
