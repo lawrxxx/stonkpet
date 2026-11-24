@@ -14,7 +14,7 @@ Built for Base's **Stocks Maxxing** hackathon. Track: Agentic Stock Finance → 
 |---|---|
 | 1. Scaffold + design port (all screens, mock data) | ✅ done |
 | 2. Wallet: passkey sign-in, paymaster, balances on Base Sepolia | 🟡 code done, needs CDP Paymaster URL + Builder Code to verify |
-| 3. Research + proposal with Claude, rules engine + tests | |
+| 3. Research + proposal with Claude, rules engine + tests | ✅ done |
 | 4. Execution onchain, receipts, Builder Codes | |
 | 5. Chat with tools, approval cards, refusals | |
 | 6. Autopilot, morning note, market sleep from feed status | |
@@ -56,6 +56,8 @@ node scripts/snapshot-stocks.mjs
 - **Market clock.** `lib/market.ts`: NYSE hours, holidays and early closes for 2026–27, DST-aware, with tests. Each price is `live` (open and fresh), `closed` (last close: fine to value, never to trade), `stale` (open, but past the 24h heartbeat, so frozen), `paused` or `missing`. Only `live` can be traded.
 - **The weather is the market.** Night when the market is closed, rain when your plan is down today, sun otherwise. Tapping the label previews the other weathers.
 - **Network switch.** `NEXT_PUBLIC_CHAIN=sepolia|mainnet` in `lib/chain.ts`. All addresses were checked onchain.
+- **Research (`lib/server/research.ts`, `/api/research`).** Turns a brief into a sourced proposal in two Claude calls (`claude-opus-5-5`, refusal fallbacks on). (1) Parse, with structured output: picks only from stocks that are tradable on Base, and flags anything asked for that isn't (for example "robots are listed but have no price feed", "Netflix has no feed"), with the closest real alternative. (2) Research: web search plus a strict `submit_research` tool. Every fact's URL is checked against the URLs the search actually returned, and anything else is dropped. Weights come from `fit()` in code, never from the model. Takes about a minute.
+- **Rules engine (`lib/rules.ts`).** Enforced in code, not in the prompt: max % per company after the trade, excluded stocks, paused trading, market closed (feeds queue for the open, other trades wait), frozen or missing feeds (never trade), the ask-me threshold, wallet balance, and listed on Base with a price feed. Each refusal comes with a plain-language reason. 26 tests.
 - **Chat.** `lib/mockBrain.ts` is the demo's keyword brain, used as the fallback until the Claude agent lands in milestone 5. Money-moving replies become yes/hold-on cards.
 
 ## What was built during the hackathon
