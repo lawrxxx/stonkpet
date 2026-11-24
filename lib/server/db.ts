@@ -7,11 +7,14 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
  */
 let client: SupabaseClient | null = null;
 
-export const dbConfigured = () => !!process.env.NEXT_PUBLIC_SUPABASE_URL && !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+/** The Vercel–Supabase integration and manual setup name the URL differently; accept both. */
+const url = () => process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+
+export const dbConfigured = () => !!url() && !!process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 export function db(): SupabaseClient {
   if (!dbConfigured()) throw new Error("Supabase is not configured");
-  client ??= createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  client ??= createClient(url()!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   return client;
