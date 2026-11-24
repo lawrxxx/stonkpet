@@ -2,6 +2,8 @@
 
 Your investing agent is a pet. Tell it what you want to invest in ("AI and robots, skip Tesla"), set a few rules, and it researches and proposes a portfolio of tokenized US stocks on Base. It executes only after you approve, then manages the portfolio inside your rules. The pet lives in a garden whose weather follows the market.
 
+**Live:** https://stonkpet.vercel.app (Base Sepolia, sample data)
+
 Built for Base's **Stocks Maxxing** hackathon. Track: Agentic Stock Finance → Research-to-portfolio agents.
 
 > Not financial advice. Coinbase tokenized stocks are only available to adults in eligible jurisdictions outside the US, and stonkpet blocks US users from trading.
