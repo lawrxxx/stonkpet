@@ -67,8 +67,8 @@ export default function Chat() {
         {s.msgs.map((m) => <Bubble key={m.id} m={m} />)}
         <div ref={end} style={{ scrollMarginBottom: 150 }} />
       </div>
-      <div style={{ position: "sticky", bottom: -30, margin: "0 -24px -30px", padding: "10px 24px 16px", background: "var(--bg)" }}>
-        <div style={{ display: "flex", gap: 8, overflowX: "auto", padding: "2px 0 10px" }} role="group" aria-label="Suggestions">
+      <div className="composer">
+        <div className="hscroll" style={{ paddingTop: 2, paddingBottom: 10 }} role="group" aria-label="Suggestions">
           {chips.map((q) => <button key={q} className="chip" onClick={() => ask(q)}>{q}</button>)}
         </div>
         <form style={{ display: "flex", gap: 8 }} onSubmit={(e) => { e.preventDefault(); const v = text.trim(); if (v) { ask(v); setText(""); } }}>

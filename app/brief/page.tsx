@@ -12,7 +12,7 @@ export default function Brief() {
       <Top back="pers" step={3} />
       <h1 style={{ marginTop: 32 }}>What&apos;s {nm(s)} into?</h1>
       <p className="mut" style={{ marginTop: 8 }}>Tap a diet, or just type it out.</p>
-      <div style={{ display: "flex", gap: 8, overflowX: "auto", marginTop: 20, paddingBottom: 2 }} role="group" aria-label="Diets">
+      <div className="hscroll" style={{ marginTop: 20, paddingBottom: 4 }} role="group" aria-label="Diets">
         {(Object.keys(DIETS) as DietKey[]).map((k) => (
           <button key={k} className="chip" aria-pressed={s.diet === k} onClick={() => s.set({ diet: k, brief: DIETS[k].text, skipCrypto: false, plan: null })}>{DIETS[k].label}</button>
         ))}

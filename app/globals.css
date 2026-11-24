@@ -111,3 +111,42 @@ a.btn{display:grid;place-items:center;text-decoration:none}
 .chk input{width:24px;height:24px;border:0;padding:0;flex:none;margin-top:2px;accent-color:var(--green)}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 :focus-visible{outline:3px solid var(--leaf);outline-offset:2px}
+
+/* ---------- mobile fit (real phones: browser chrome, notches, small screens) ---------- */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+body{overscroll-behavior-y:none;-webkit-tap-highlight-color:transparent}
+button,a,[role=radio],[role=tab]{touch-action:manipulation}
+@media(max-width:599px){body{background:var(--bg)}}
+/* nothing inside a screen may shrink and overlap; only spacers flex */
+.scr>*{flex-shrink:0}
+.scr>.grow{flex-shrink:1}
+/* safe areas: notch on top, home indicator at the bottom */
+.scr{padding-top:max(22px,calc(env(safe-area-inset-top) + 10px));padding-left:max(20px,env(safe-area-inset-left));padding-right:max(20px,env(safe-area-inset-right))}
+.phone:not(.tabbed) .scr{padding-bottom:max(24px,calc(env(safe-area-inset-bottom) + 12px))}
+.tabs{padding-bottom:max(14px,env(safe-area-inset-bottom))}
+@media(min-width:600px){.scr{padding:22px 24px 30px}}
+/* the garden scales with the screen instead of a fixed 330px */
+.scene.fluid{height:auto;flex:1 1 330px;min-height:190px;max-height:330px;container-type:size}
+.scene.fluid .pet{bottom:9cqh}
+.scene.fluid .pet svg{width:auto;height:clamp(84px,50cqh,165px)}
+/* edge-to-edge horizontal scrollers so chips read as "swipe for more" */
+.hscroll{display:flex;gap:8px;overflow-x:auto;margin-left:-20px;margin-right:-20px;padding-left:20px;padding-right:20px;scrollbar-width:none;scroll-padding:0 20px}
+.hscroll::-webkit-scrollbar{display:none}
+.hscroll>*{flex:none}
+@media(min-width:600px){.hscroll{margin-left:-24px;margin-right:-24px;padding-left:24px;padding-right:24px}}
+/* feed amounts stay on one row */
+.amt{flex-wrap:nowrap}
+.amt button{flex:1 1 0;min-width:0;max-width:84px;padding:0 6px}
+.bigamt{font-size:clamp(56px,18vw,72px)}
+.hero{font-size:clamp(28px,8.6vw,34px)}
+/* short screens (iPhone SE, Safari with toolbars) */
+@media(max-height:700px){
+  .scr>h1{margin-top:18px!important}
+  .hero{margin-top:18px!important}
+  .tight{margin-top:16px!important}
+  .scene.fluid{min-height:170px}
+}
+@media(max-height:600px){.scene.fluid{min-height:132px}.scr>p{margin-top:0}}
+.composer{position:sticky;bottom:-30px;margin:0 -20px -30px;padding:10px 20px 16px;background:var(--bg)}
+@media(min-width:600px){.composer{margin:0 -24px -30px;padding:10px 24px 16px}}
+.sheet{padding-bottom:max(28px,calc(env(safe-area-inset-bottom) + 16px))}

@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   title: "stonkpet",
   description: "Your investing agent is a pet. Tell it what you're into, set a few rules, and it builds a portfolio of tokenized stocks on Base.",
 };
-export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#FBF6EC" };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, viewportFit: "cover", themeColor: "#FBF6EC" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

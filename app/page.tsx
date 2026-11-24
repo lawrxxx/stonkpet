@@ -11,13 +11,13 @@ export default function Welcome() {
   return (
     <section className="scr on" aria-label="Welcome">
       <div className="top"><span style={{ font: "700 22px Fredoka,system-ui,sans-serif", color: "var(--green)" }}>stonkpet</span></div>
-      <div className="scene" style={{ marginTop: 12 }}>
+      <div className="scene fluid" style={{ marginTop: 12 }}>
         <SceneSvg w="sun" />
         <div className="pet"><Pet mood="happy" size={150} /></div>
       </div>
-      <h1 className="c" style={{ marginTop: 26, fontSize: 34 }}>Your money, but make it a pet</h1>
+      <h1 className="c hero" style={{ marginTop: 26 }}>Your money, but make it a pet</h1>
       <p className="mut c" style={{ marginTop: 12, fontSize: 17 }}>Tell it what you&apos;re into. Feed it. Watch it grow.</p>
-      <div className="grow" />
+      <div className="grow" style={{ minHeight: 20, maxHeight: 60 }} />
       <button className="btn" onClick={() => (eligible ? go("name") : open("eligible"))}>Get started</button>
     </section>
   );

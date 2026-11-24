@@ -57,7 +57,7 @@ export default function Feed() {
           {TOKS.map((k) => <button key={k} role="radio" aria-checked={k === s.tok} onClick={() => s.set({ tok: k })}>{k}</button>)}
         </div>
         <p className="mut c sm" style={{ marginTop: 10 }}>{s.tok === "USDC" ? `From your USDC · ${left("USDC")}` : `${nm(s)} swaps your ${s.tok} for stocks · ${left(s.tok)}`}</p>
-        <p className="big c" style={{ fontSize: 72, lineHeight: 1, marginTop: 26 }} aria-live="polite">${s.amt}</p>
+        <p className="big c bigamt" style={{ lineHeight: 1, marginTop: 26 }} aria-live="polite">${s.amt}</p>
         <div className="amt" role="radiogroup" aria-label="Amount" style={{ marginTop: 28 }}>
           {[10, 20, 50, 100].map((v) => <button key={v} role="radio" aria-checked={v === s.amt} onClick={() => s.set({ amt: v })}>${v}</button>)}
         </div>

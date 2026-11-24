@@ -14,7 +14,7 @@ export default function Home() {
   const w = s.wx;
   return (
     <section className="scr on" aria-label="Home">
-      <div className={"scene" + (w === "night" ? " sleep" : "")}>
+      <div className={"scene fluid" + (w === "night" ? " sleep" : "")}>
         <SceneSvg w={w} />
         <div className="pet"><Pet mood={w === "night" ? "sleep" : w === "rain" ? "sad" : "happy"} size={150} /></div>
         <button className="lbl" onClick={() => s.set({ wx: WX[(WX.indexOf(w) + 1) % 3] })} aria-label={`${LBL[w]}. Tap to preview other weather (sample).`}>
@@ -24,7 +24,7 @@ export default function Home() {
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" /></svg>
         </button>
       </div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 18 }}>
+      <div className="tight" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 18 }}>
         <h1 style={{ fontSize: 30 }}>{nm(s)}</h1>
         <span className="sm mut" style={{ display: "flex", alignItems: "center", gap: 6 }}>
           Lv 3{" "}

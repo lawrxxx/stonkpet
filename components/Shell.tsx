@@ -59,7 +59,7 @@ export function Shell({ children }: { children: ReactNode }) {
 
   const night = wx === "night" && TABS.concat("feed").includes(screen);
   return (
-    <div className={"phone" + (night ? " night" : "") + (sheet ? " open" : "")} id="app">
+    <div className={"phone" + (night ? " night" : "") + (sheet ? " open" : "") + (TABS.includes(screen) ? " tabbed" : "")} id="app">
       {ready ? children : <section className="scr on" aria-busy="true" />}
       <Tabs screen={screen} />
       <div className="scrim" onClick={() => useStore.getState().close()} />
