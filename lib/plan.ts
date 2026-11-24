@@ -2,6 +2,8 @@
  * Deterministic portfolio maths, ported from the demo's buildPlan() and fit().
  * The model never picks weights; it only picks themes and candidates.
  */
+import type { Proposal } from "./server/research";
+
 export type Weights = Record<string, number>;
 
 export type Plan = {
@@ -13,6 +15,8 @@ export type Plan = {
   lead: string;
   robot: boolean;
   brief: string;
+  /** Present when the plan came from /api/research (Claude + web search); absent for the offline keyword plan. */
+  research?: Proposal;
 };
 
 export type DietKey = "ai" | "big" | "spicy";
@@ -62,4 +66,9 @@ export function buildPlan(brief: string, capPct: number): Plan {
   const pool = DIETS[diet].pool.filter((p) => !excl.includes(p[0]));
   const w = fit(Object.fromEntries(pool), capPct, 6);
   return { diet, theme: DIETS[diet].theme, excl, w, cash: cashOf(w), lead: pool[0][0], robot: /robot/.test(t), brief: brief.trim() };
+}
+
+/** Turn a research proposal into the plan the app runs on. */
+export function planFromProposal(p: Proposal, diet: DietKey): Plan {
+  return { diet, theme: p.theme, excl: p.excluded, w: p.weights, cash: p.cash, lead: p.lead, robot: false, brief: p.brief, research: p };
 }

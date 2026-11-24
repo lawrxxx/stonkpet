@@ -65,7 +65,7 @@ export function Deposit() {
           <span className="num t-heading">{short(w.address)}</span>
           <CopyButton text={w.address} />
         </div>
-        <a className="src row-x gap-1" href={addressUrl(w.address)} target="_blank" rel="noreferrer">View on Basescan <Icon name="external" size={12} /></a>
+        <a className="src src-link" href={addressUrl(w.address)} target="_blank" rel="noreferrer">View on Basescan <Icon name="external" size={12} /></a>
       </div>
       <div className="row"><span className="grow">USDC</span><span className="strong num">{b.USDC === null ? "…" : money(b.USDC)}</span></div>
       <div className="row">

@@ -27,7 +27,7 @@ export default function Rules() {
         <Pick label="Check with me above" id="askL" vals={[10, 25, 50, 100]} value={s.ask} fmt={(v) => "$" + v} onPick={(v) => s.set({ ask: v, plan: null })} />
       </div>
       <div className="grow" />
-      <button className="btn mt-6" onClick={() => { s.rebuild(); go("think"); }}>Make {nm(s)}&apos;s plan</button>
+      <button className="btn mt-6" onClick={() => { void s.startResearch(); go("think"); }}>Make {nm(s)}&apos;s plan</button>
     </section>
   );
 }

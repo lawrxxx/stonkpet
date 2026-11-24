@@ -1,7 +1,7 @@
 "use client";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { buildPlan, cashOf, fit, leadOf, type Plan, type Weights } from "./plan";
+import { buildPlan, cashOf, fit, leadOf, planFromProposal, type DietKey, type Plan, type Weights } from "./plan";
 import { ABOUT, nameOf } from "./stocks";
 import type { PriceBoard } from "./server/prices";
 
@@ -67,6 +67,8 @@ type State = {
   wxPreview: Wx | null;
   /** Latest price board (not persisted). */
   board: PriceBoard | null;
+  /** Live research request (not persisted). */
+  research: { status: "idle" | "loading" | "done" | "error"; message?: string; startedAt?: number };
   total: number;
   wallet: Record<Tok, number>;
   paused: boolean;
@@ -88,6 +90,10 @@ type Actions = {
   set: (p: Partial<State>) => void;
   ensurePlan: () => Plan;
   rebuild: () => void;
+  /** Ask /api/research (Claude + web search) for a sourced plan. */
+  startResearch: () => Promise<void>;
+  /** Offline keyword plan, used only if research is unavailable. */
+  useSimplePlan: () => void;
   approve: () => void;
   addLog: (what: string, detail: string, amount?: number | null) => void;
   runAction: (a: CardAction) => string;
@@ -105,7 +111,7 @@ export type Store = State & Actions;
 const initial: State = {
   ready: false, eligible: false, name: "Mochi", pers: "balanced", cap: 30, ask: 25,
   brief: "AI and robots. Skip Tesla.", diet: "ai", skipCrypto: false, amt: 20, tok: "USDC", why: "facts",
-  trimmed: null, wx: "sun", wxPreview: null, board: null, total: 248.6, wallet: { USDC: 120, ETH: 340, cbBTC: 90 }, paused: false, weekly: 10,
+  trimmed: null, wx: "sun", wxPreview: null, board: null, research: { status: "idle" }, total: 248.6, wallet: { USDC: 120, ETH: 340, cbBTC: 90 }, paused: false, weekly: 10,
   auto: { reb: true, weekly: true, tp: false }, log: [], plan: null, co: 25, rc: 0, msgs: [], guess: null, ci: 0, sheet: null, next: null,
 };
 
@@ -143,6 +149,24 @@ export const useStore = create<Store>()(
           return plan;
         },
         rebuild: () => { const s = get(); set({ plan: buildPlan(s.brief, s.cap) }); },
+        startResearch: async () => {
+          const s = get();
+          set({ plan: null, research: { status: "loading", startedAt: Date.now() } });
+          try {
+            const r = await fetch("/api/research", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({ brief: s.brief, personality: s.pers, maxPct: s.cap, askAboveUsd: s.ask, exclusions: s.skipCrypto ? ["MSTR"] : [] }),
+            });
+            const j = await r.json();
+            if (!r.ok) { set({ research: { status: "error", message: j.message ?? "My research hit a snag." } }); return; }
+            const diet = (["ai", "big", "spicy"].includes(s.diet ?? "") ? s.diet : "ai") as DietKey;
+            set({ plan: planFromProposal(j, diet), research: { status: "done" }, why: "facts" });
+          } catch {
+            set({ research: { status: "error", message: "I couldn't reach my research brain. Check your connection?" } });
+          }
+        },
+        useSimplePlan: () => { const s = get(); set({ plan: buildPlan(s.brief, s.cap), research: { status: "idle" } }); },
         approve: () => {
           const s = get();
           const p = s.plan!;
@@ -279,7 +303,7 @@ export const useStore = create<Store>()(
       name: "stonkpet-mock",
       version: 1,
       storage: createJSONStorage(() => localStorage),
-      partialize: ({ sheet, ready, next, board, wx, wxPreview, ...rest }) => rest,
+      partialize: ({ sheet, ready, next, board, wx, wxPreview, research, ...rest }) => rest,
       skipHydration: true,
     },
   ),

@@ -175,7 +175,7 @@ function Body({ k, onSettled }: { k: SheetKey; onSettled: () => void }) {
         <div className="share mt-3">
           <div className="petwrap"><Pet mood="happy" size={104} /></div>
           <p className="num t-heading mt-2">{d === null ? name : `${name} is ${pct(d)} today`}</p>
-          <p className="t-small muted mt-1">Level 3 · {p ? DIETS[p.diet].label : ""} diet</p>
+          <p className="t-small muted mt-1">Level 3 · {p ? (p.research ? p.research.theme : DIETS[p.diet].label) : ""}</p>
           <p className="t-caption muted mt-4">stonkpet · built on Base</p>
         </div>
         <p className="t-small muted center mt-3">Only shows %, never how much you have.</p>
