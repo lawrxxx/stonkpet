@@ -1,0 +1,24 @@
+"use client";
+import { Pet } from "@/components/Pet";
+import { SceneSvg } from "@/components/Scene";
+import { useGo } from "@/components/nav";
+import { useStore } from "@/lib/store";
+
+export default function Welcome() {
+  const eligible = useStore((s) => s.eligible);
+  const open = useStore((s) => s.open);
+  const go = useGo();
+  return (
+    <section className="scr on" aria-label="Welcome">
+      <div className="top"><span style={{ font: "700 22px Fredoka,system-ui,sans-serif", color: "var(--green)" }}>stonkpet</span></div>
+      <div className="scene" style={{ marginTop: 12 }}>
+        <SceneSvg w="sun" />
+        <div className="pet"><Pet mood="happy" size={150} /></div>
+      </div>
+      <h1 className="c" style={{ marginTop: 26, fontSize: 34 }}>Your money, but make it a pet</h1>
+      <p className="mut c" style={{ marginTop: 12, fontSize: 17 }}>Tell it what you&apos;re into. Feed it. Watch it grow.</p>
+      <div className="grow" />
+      <button className="btn" onClick={() => (eligible ? go("name") : open("eligible"))}>Get started</button>
+    </section>
+  );
+}

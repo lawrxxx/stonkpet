@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>stonkpet demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: cozy, warm, honest; one thing at a time
+   IDEA: a little garden where your pet lives; the weather is the market
+   PICTURE: the garden scene with the pet, large, at the top of home
+   COLOUR and TYPE: warm cream, leaf green for actions, sunny yellow and soft sky; Fredoka titles + Nunito body
+   LAYOUT: one focus per screen, everything else in bottom sheets */
+:root{color-scheme:light dark;
+--bg:light-dark(#FBF6EC,#14182A);--card:light-dark(#FFFFFF,#1E2438);--ink:light-dark(#2A2440,#F3EFE6);
+--mut:light-dark(#6B6380,#B4AEC4);--line:light-dark(#EFE7D8,#2C3350);--green:#1E7A52;--greendk:#145A3B;--leaf:#3DBE7E;
+--blueink:light-dark(#1E7A52,#7FE0AE);--bsoft:light-dark(#E3F6EA,#1F3A30);--up:light-dark(#17774A,#6FDCA2);--down:light-dark(#B8432F,#FF9A86);
+--warn:light-dark(#FFF0C9,#33291A);--warnink:light-dark(#6B4A00,#F5D58A);--blue:#1E7A52}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:light-dark(#EFE6D4,#0B0E1A);color:var(--ink);font:600 16px/1.5 Nunito,system-ui,sans-serif;overflow-x:clip;display:flex;justify-content:center}
+.phone{width:100%;max-width:420px;height:100vh;height:100dvh;background:var(--bg);display:flex;flex-direction:column;position:relative;overflow:hidden;transition:background .5s;color:var(--ink)}
+@media(min-width:600px){body{padding:24px 0}.phone{min-height:0;height:860px;border-radius:44px;box-shadow:0 30px 80px rgba(60,40,10,.18)}}
+.scr{display:none;flex:1;flex-direction:column;overflow-y:auto;padding:22px 24px 30px}
+.scr.on{display:flex;animation:in .3s ease}
+@keyframes in{from{opacity:0;transform:translateY(8px)}}
+h1,.big{font-family:Fredoka,Nunito,sans-serif;letter-spacing:-.01em;margin:0;font-weight:600}
+h1{font-size:30px;line-height:1.15;text-wrap:balance}
+p{margin:0}.mut{color:var(--mut)}.c{text-align:center}.grow{flex:1}.sm{font-size:14px}
+.top{display:flex;align-items:center;justify-content:space-between;min-height:44px}
+.back,.ib{width:44px;height:44px;border:0;background:none;color:var(--ink);border-radius:14px;cursor:pointer;font-size:26px;display:grid;place-items:center}
+.back{margin-left:-12px}
+.steps{display:flex;gap:6px}.steps i{width:18px;height:6px;border-radius:3px;background:var(--line)}.steps i.on{background:var(--leaf)}
+.btn{height:58px;border:0;border-radius:22px;background:var(--green);color:#fff;font:700 17px Nunito,sans-serif;width:100%;cursor:pointer;box-shadow:0 4px 0 var(--greendk);transition:transform .08s,box-shadow .08s}
+.btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--greendk)}
+.btn.alt{background:var(--card);color:var(--ink);box-shadow:0 4px 0 var(--line)}
+.btn.s{height:48px;font-size:15px;border-radius:16px}
+.link{border:0;background:none;color:var(--blueink);font:700 15px Nunito,system-ui,sans-serif;cursor:pointer;min-height:44px;padding:0 4px}
+.chip{height:42px;padding:0 18px;border-radius:21px;border:0;background:var(--card);color:var(--ink);font:700 14px Nunito,system-ui,sans-serif;cursor:pointer;flex:none;box-shadow:0 2px 0 var(--line)}
+.chip[aria-pressed=true]{background:var(--ink);color:var(--bg);box-shadow:none}
+.opt{background:var(--card);border:2.5px solid transparent;border-radius:24px;padding:18px 20px;text-align:left;color:var(--ink);font:inherit;cursor:pointer;width:100%;display:flex;align-items:center;gap:14px;box-shadow:0 3px 0 var(--line)}
+.opt[aria-checked=true]{border-color:var(--leaf);background:var(--bsoft)}
+.opt .t{font:600 19px Fredoka,system-ui,sans-serif;display:block}.opt .d{font-size:14px;color:var(--mut);display:block;margin-top:2px}
+.radio{width:24px;height:24px;border-radius:12px;border:2.5px solid var(--line);flex:none;margin-left:auto}
+.opt[aria-checked=true] .radio{border:8px solid var(--leaf)}
+textarea{width:100%;min-height:110px;border:0;border-radius:24px;background:var(--card);padding:18px;font:700 18px/1.45 Nunito,sans-serif;color:var(--ink);resize:none;box-shadow:0 3px 0 var(--line)}
+input{height:64px;border:0;border-bottom:3px dashed var(--line);padding:0 2px;font:600 32px Fredoka,sans-serif;color:var(--ink);background:none;width:100%;text-align:center}
+input:focus{outline:none;border-bottom:3px solid var(--leaf)}textarea:focus{outline:3px solid var(--leaf)}
+button:focus-visible{outline:3px solid var(--leaf);outline-offset:2px}
+.list{background:var(--card);border-radius:24px;padding:4px 18px;box-shadow:0 3px 0 var(--line)}
+.row{display:flex;align-items:center;gap:12px;min-height:58px;border-bottom:1.5px dashed var(--line);width:100%;background:none;border-left:0;border-right:0;border-top:0;color:var(--ink);font:inherit;text-align:left;padding:0}
+.row:last-child{border-bottom:0}button.row{cursor:pointer}
+.blk{display:block;padding:12px 0;min-height:0}
+.sp{display:flex;justify-content:space-between;gap:10px}
+.chev{color:var(--mut);font-size:22px}
+.up{color:var(--up);font-weight:800}.down{color:var(--down);font-weight:800}
+.note{background:var(--warn);color:var(--warnink);border-radius:20px;padding:14px 16px;font-size:14px;line-height:1.45}
+.note b{color:var(--ink);font:600 16px Fredoka,system-ui,sans-serif;display:block;margin-bottom:2px}
+.seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;padding:5px;border-radius:18px;background:var(--line)}
+.seg button{height:40px;border:0;border-radius:14px;background:none;color:var(--mut);font:700 14px Nunito,system-ui,sans-serif;cursor:pointer}
+.seg button[aria-selected=true],.seg button[aria-checked=true]{background:var(--card);color:var(--ink);box-shadow:0 2px 0 rgba(0,0,0,.06)}
+.bar{height:8px;border-radius:4px;background:var(--line);position:relative;margin-top:6px}
+.bar i{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:var(--leaf)}
+.bar .cap{position:absolute;top:-4px;bottom:-4px;width:3px;background:var(--ink);opacity:.5;border-radius:2px}
+.src{font-size:12px;color:var(--mut);margin-top:2px}
+.petwrap{display:flex;justify-content:center}
+.petwrap svg{animation:bob 2.8s ease-in-out infinite}
+.sleep .petwrap svg,.scene .sleep svg{animation:none}
+@keyframes bob{50%{transform:translateY(-6px)}}
+.scene{position:relative;height:330px;border-radius:34px;overflow:hidden;flex:none}
+.scene>svg{position:absolute;inset:0;width:100%;height:100%}
+.scene .pet{position:absolute;left:50%;bottom:34px;transform:translateX(-50%)}
+.scene .pet svg{animation:bob 2.8s ease-in-out infinite}
+.scene .lbl{position:absolute;top:14px;left:14px;border:0;background:rgba(255,255,255,.82);color:#2A2440;font:700 13px Nunito,system-ui,sans-serif;border-radius:16px;padding:0 14px;min-height:36px;cursor:pointer;backdrop-filter:blur(6px)}
+.scene .ib{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.82);color:#2A2440;width:44px;height:44px;border-radius:22px}
+.leaves{display:inline-flex;gap:3px;vertical-align:middle}
+.tabs{display:none;grid-template-columns:repeat(3,minmax(0,1fr));background:var(--card);padding:6px 10px 14px;margin:0;border-radius:26px 26px 0 0;box-shadow:0 -3px 0 var(--line)}
+.tabs.on{display:grid}
+.tab{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;min-height:54px;justify-content:center;font:700 12px Nunito,system-ui,sans-serif;color:var(--mut);cursor:pointer;position:relative;border-radius:16px}
+.tab[aria-current=page]{color:var(--green);background:var(--bsoft)}
+.badge{position:absolute;top:6px;left:calc(50% + 6px);width:10px;height:10px;border-radius:5px;background:#E8664F;box-shadow:0 0 0 2px var(--card)}
+.bub{scroll-margin-bottom:150px;max-width:84%;padding:12px 16px;border-radius:22px;font-size:15px;line-height:1.45;box-shadow:0 2px 0 var(--line)}
+.me{align-self:flex-end;background:var(--green);color:#fff;border-bottom-right-radius:8px;box-shadow:none}
+.pb{align-self:flex-start;background:var(--card);border-bottom-left-radius:8px}
+.tag{display:inline-block;font-size:11px;font-weight:800;padding:2px 9px;border-radius:8px;background:var(--bsoft);color:var(--blueink);margin-bottom:4px}
+.amt{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.amt button{height:46px;min-width:66px;padding:0 16px;border-radius:23px;border:0;background:var(--card);color:var(--ink);font:800 15px Nunito,system-ui,sans-serif;cursor:pointer;box-shadow:0 3px 0 var(--line)}
+.amt button[aria-checked=true]{background:var(--ink);color:var(--bg);box-shadow:none}
+.pick{display:flex;gap:8px}.pick button{flex:1;height:46px;border-radius:16px;border:0;background:var(--bg);color:var(--ink);font:800 15px Nunito,system-ui,sans-serif;cursor:pointer}
+.pick button[aria-checked=true]{background:var(--ink);color:var(--bg)}
+.sw{width:54px;height:34px;border:0;border-radius:17px;padding:4px;display:flex;background:#CFC6B4;cursor:pointer;flex:none}
+.sw[aria-checked=true]{background:var(--leaf);justify-content:flex-end}
+.sw span{width:26px;height:26px;border-radius:13px;background:#fff}
+.step{display:flex;align-items:center;gap:12px;min-height:40px;font-size:15px;opacity:.3;transition:opacity .3s}
+.step.on{opacity:1}.step .ic{width:24px;height:24px;border-radius:12px;background:var(--bsoft);color:var(--green);display:grid;place-items:center;font-size:13px;font-weight:800}
+.quiet{display:flex;align-items:center;gap:10px;justify-content:center;border:0;background:var(--warn);color:var(--ink);border-radius:20px;min-height:50px;padding:0 18px;font:700 15px Nunito,system-ui,sans-serif;cursor:pointer;align-self:stretch}
+.dot{width:9px;height:9px;border-radius:5px;background:#E8664F;flex:none}
+.share{background:linear-gradient(170deg,#BFE6FF,#FFF1D6);color:#2A2440;border-radius:28px;padding:22px;text-align:center}
+.coin{position:absolute;left:50%;top:-40px;width:44px;height:44px;margin-left:-22px;border-radius:22px;background:#FFD66B;box-shadow:inset 0 -4px 0 #E0A93B;display:grid;place-items:center;font:700 20px Fredoka,system-ui,sans-serif;color:#7A5200;opacity:0}
+.drop .coin{animation:drop .7s cubic-bezier(.5,0,.8,.4) forwards}
+@keyframes drop{0%{opacity:1;transform:translateY(0)}85%{opacity:1}100%{opacity:0;transform:translateY(170px) scale(.6)}}
+.scrim{position:absolute;inset:0;background:rgba(30,20,10,.35);opacity:0;pointer-events:none;transition:opacity .2s;z-index:5}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--bg);border-radius:32px 32px 0 0;padding:10px 24px 28px;transform:translateY(100%);transition:transform .3s cubic-bezier(.2,.8,.2,1);z-index:6;max-height:86%;overflow-y:auto}
+.open .scrim{opacity:1;pointer-events:auto}.open .sheet{transform:none}
+.grab{width:44px;height:6px;border-radius:3px;background:var(--line);margin:0 auto 18px}
+.sheet h2{font:600 24px Fredoka,sans-serif;margin:0 0 6px}
+.phone.night{--bg:#141A30;--ink:#F3EFE6;--mut:#B4AEC4;--card:#1F2640;--line:#2E3656;--bsoft:#1F3A30;--warn:#2E2818;--warnink:#F5D58A;--blueink:#7FE0AE;--up:#6FDCA2;--down:#FF9A86}
+.phone.night .tab[aria-current=page]{color:#7FE0AE}
+@media(prefers-reduced-motion:reduce){.petwrap svg,.scene .pet svg,.scr.on,.drop .coin{animation:none}.sheet,.scrim,.step,.btn{transition:none}}
+</style>
+</head>
+<body>
+<div class="phone" id="app">
+
+<section class="scr" id="welcome" aria-label="Welcome">
+  <div class="top"><span style="font:700 22px Fredoka,system-ui,sans-serif;color:var(--green)">stonkpet</span></div>
+  <div class="scene" id="wScene" style="margin-top:12px"></div>
+  <h1 class="c" style="margin-top:26px;font-size:34px">Your money, but make it a pet</h1>
+  <p class="mut c" style="margin-top:12px;font-size:17px">Tell it what you're into. Feed it. Watch it grow.</p>
+  <div class="grow"></div>
+  <button class="btn" data-go="name">Get started</button>
+</section>
+
+<section class="scr" id="name" aria-label="Name your pet">
+  <div class="top"><button class="back" data-go="welcome" aria-label="Back">‹</button><div class="steps" aria-label="Step 1 of 4"><i class="on"></i><i></i><i></i><i></i></div><span style="width:32px"></span></div>
+  <h1 style="margin-top:32px">First, a name</h1>
+  <div class="grow" style="max-height:120px"></div>
+  <label for="petName" class="mut c sm">Name</label>
+  <input id="petName" value="Mochi" maxlength="14" autocomplete="off">
+  <div class="grow"></div>
+  <button class="btn" data-go="pers">Continue</button>
+</section>
+
+<section class="scr" id="pers" aria-label="Personality">
+  <div class="top"><button class="back" data-go="name" aria-label="Back">‹</button><div class="steps" aria-label="Step 2 of 4"><i class="on"></i><i class="on"></i><i></i><i></i></div><span style="width:32px"></span></div>
+  <h1 style="margin-top:32px">How bold is <span class="nm">Mochi</span>?</h1>
+  <p class="mut" style="margin-top:8px">This sets how risky it plays. You can change it anytime.</p>
+  <div role="radiogroup" aria-label="Personality" id="persList" style="margin-top:28px;display:flex;flex-direction:column;gap:12px"></div>
+  <div class="grow"></div>
+  <button class="btn" data-go="brief">Continue</button>
+</section>
+
+<section class="scr" id="brief" aria-label="Your brief">
+  <div class="top"><button class="back" data-go="pers" aria-label="Back">‹</button><div class="steps" aria-label="Step 3 of 4"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div><span style="width:32px"></span></div>
+  <h1 style="margin-top:32px">What's <span class="nm">Mochi</span> into?</h1>
+  <p class="mut" style="margin-top:8px">Tap a diet, or just type it out.</p>
+  <div style="display:flex;gap:8px;overflow-x:auto;margin-top:20px;padding-bottom:2px" id="diets" role="group" aria-label="Diets"></div>
+  <label for="briefTxt" class="sm" style="margin-top:18px;font-weight:600">In your words</label>
+  <textarea id="briefTxt" style="margin-top:8px">AI and robots. Skip Tesla.</textarea>
+  <div class="grow"></div>
+  <button class="btn" data-go="rules" style="margin-top:20px">Continue</button>
+</section>
+
+<section class="scr" id="rules" aria-label="Your rules">
+  <div class="top"><button class="back" data-go="brief" aria-label="Back">‹</button><div class="steps" aria-label="Step 4 of 4"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div><span style="width:32px"></span></div>
+  <h1 style="margin-top:32px">A few ground rules</h1>
+  <p class="mut" style="margin-top:8px">Picked for a <span id="persName">balanced</span> pet. <span class="nm">Mochi</span> sticks to these, no matter what.</p>
+  <div class="list" style="margin-top:24px;padding:18px">
+    <p style="font-weight:600" id="capL">Most in one company</p>
+    <div class="pick" role="radiogroup" aria-labelledby="capL" id="capPick" style="margin-top:10px"></div>
+    <p style="font-weight:600;margin-top:22px" id="askL">Check with me above</p>
+    <div class="pick" role="radiogroup" aria-labelledby="askL" id="askPick" style="margin-top:10px"></div>
+  </div>
+  <div class="grow"></div>
+  <button class="btn" id="research">Let <span class="nm">Mochi</span> cook</button>
+</section>
+
+<section class="scr" id="think" aria-label="Researching">
+  <div class="grow"></div>
+  <div class="petwrap" id="tPet"></div>
+  <h1 class="c" style="margin-top:24px;font-size:26px"><span class="nm">Mochi</span> is doing homework</h1>
+  <div id="stepList" style="margin:24px auto 0;width:100%;max-width:300px"></div>
+  <div class="grow"></div>
+</section>
+
+<section class="scr" id="proposal" aria-label="Plan">
+  <p class="mut sm" style="margin-top:4px">The plan</p>
+  <h1 style="margin-top:4px">What <span class="nm">Mochi</span> came up with</h1>
+  <div id="flags" style="display:flex;flex-direction:column;gap:10px;margin-top:18px"></div>
+  <div class="list" style="margin-top:16px" id="plate"></div>
+  <p class="mut sm" style="margin-top:10px" id="plateNote"></p>
+  <div class="seg" role="tablist" aria-label="Reasoning" style="margin-top:22px" id="why"></div>
+  <div id="whyBody" style="margin-top:12px"></div>
+  <p class="mut" style="font-size:12px;margin-top:14px">Sample data for this demo.</p>
+  <div style="min-height:24px"></div>
+  <button class="btn" id="approve">Looks good</button>
+  <button class="link" data-go="brief" style="align-self:center;margin-top:4px">Change what I said</button>
+</section>
+
+<section class="scr" id="home" aria-label="Home">
+  <div class="scene" id="hScene">
+    <svg id="hSky" aria-hidden="true"></svg>
+    <div class="pet" id="hPet"></div>
+    <button class="lbl" id="market"><span id="mktTxt">Sunny · market's open</span></button>
+    <button class="ib" data-sheet="share" aria-label="Share your pet"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg></button>
+  </div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px">
+    <h1 class="nm" style="font-size:30px">Mochi</h1>
+    <span class="sm mut" style="display:flex;align-items:center;gap:6px">Lv 3 <span class="leaves" id="lvl" aria-label="Level 3 of 5"></span></span>
+  </div>
+  <p id="moodTxt" style="font-size:16px;margin-top:2px">Feeling great. Fed 4 weeks in a row.</p>
+  <div class="list" style="margin-top:16px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center">
+    <span><span class="mut sm" style="display:block">Worth</span><span class="big totv" style="font-size:24px">$248.60</span></span>
+    <span style="text-align:right"><span class="mut sm" style="display:block" id="chgL">This month</span><span id="chg" class="up" style="font:600 22px Fredoka,system-ui,sans-serif">+8.0%</span></span>
+  </div>
+  <div class="grow" style="min-height:14px"></div>
+  <button class="quiet" data-sheet="note"><span class="dot" aria-hidden="true"></span><span class="grow" style="text-align:left"><span class="nm">Mochi</span> left you a note</span><span class="chev">›</span></button>
+  <button class="btn" data-go="feed" style="margin-top:12px">Feed <span class="nm">Mochi</span></button>
+</section>
+
+<section class="scr" id="feed" aria-label="Feed">
+  <div class="top"><button class="back" data-go="home" aria-label="Back">‹</button></div>
+  <div id="fForm" style="display:flex;flex-direction:column;flex:1">
+    <div class="seg" role="radiogroup" aria-label="Pay with" id="tokens" style="margin-top:12px"></div>
+    <p class="mut c sm" id="tokNote" style="margin-top:10px"></p>
+    <p class="big c" style="font-size:72px;line-height:1;margin-top:26px" id="amt">$20</p>
+    <div class="amt" role="radiogroup" aria-label="Amount" id="presets" style="margin-top:28px"></div>
+    <div class="grow"></div>
+    <button class="link" data-sheet="basket" style="align-self:center">What will <span class="nm">Mochi</span> eat?</button>
+    <button class="btn" id="feedBtn" style="margin-top:12px">Feed $20</button>
+  </div>
+  <div id="fDone" style="display:none;flex-direction:column;flex:1">
+    <div class="grow"></div>
+    <div style="position:relative" id="dropZone"><div class="coin" aria-hidden="true">$</div><div class="petwrap" id="fPet"></div></div>
+    <h1 class="c" style="margin-top:24px">Yum!</h1>
+    <p class="mut c" style="margin-top:8px;font-size:17px" id="fedTxt"></p>
+    <p class="up c sm" style="margin-top:14px">5 weeks in a row. Nice.</p>
+    <div class="grow"></div>
+    <button class="btn" data-go="home">Done</button>
+  </div>
+</section>
+
+<section class="scr" id="chat" aria-label="Chat">
+  <p id="aiNote" class="mut c" style="display:none;font-size:12px;margin-bottom:6px">Live AI: <span class="nm">Mochi</span> reads anything you type</p>
+  <div id="msgs" style="display:flex;flex-direction:column;gap:12px;flex:1;padding-top:8px">
+    <div class="bub pb"><span class="lead">NVIDIA</span> had a big week. It's now <span id="leadNow">36</span>% of everything, and your max is <span class="capv">30</span>%.</div>
+    <div class="bub pb" style="max-width:92%;padding:18px">
+      <p style="font-weight:600;font-size:17px">Mind if I sell $14.92 of <span class="lead">NVIDIA</span>?</p>
+      <p class="mut sm" style="margin-top:4px">Puts it back where we planned. The money goes into your other stocks.</p>
+      <div id="ask" style="display:flex;gap:8px;margin-top:14px"><button class="btn s" id="yes">Go for it</button><button class="btn s alt" id="no" style="background:var(--bg)">Hold on</button></div>
+    </div>
+  </div>
+  <div style="position:sticky;bottom:-30px;margin:0 -24px -30px;padding:10px 24px 16px;background:var(--bg)">
+    <div id="chips" style="display:flex;gap:8px;overflow-x:auto;padding:2px 0 10px"></div>
+    <form id="send" style="display:flex;gap:8px"><input id="msg" aria-label="Message Mochi" placeholder="Ask Mochi anything" autocomplete="off" style="height:52px;border:0;border-radius:26px;background:var(--card);font:700 16px Nunito,system-ui,sans-serif;text-align:left;padding:0 20px;box-shadow:0 3px 0 var(--line)"><button class="btn" aria-label="Send" style="width:52px;height:52px;border-radius:26px;flex:none;font-size:22px">↑</button></form>
+  </div>
+</section>
+
+<section class="scr" id="portfolio" aria-label="Portfolio">
+  <p class="mut" style="margin-top:4px">Everything <span class="nm">Mochi</span> holds</p>
+  <p class="big totv" style="font-size:42px;margin-top:4px">$248.60</p>
+  <p style="font-size:15px"><span class="up">+$18.40</span> <span class="mut">this month</span></p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px"><button class="btn s" data-sheet="deposit">Add money</button><button class="btn s alt" data-sheet="cashout">Cash out</button></div>
+  <div style="margin-top:20px"><div class="sp sm"><span class="mut">Goal: $1,000 by June</span><span style="font-weight:600" id="goalPct">25%</span></div><div class="bar" style="height:8px"><i id="goalBar" style="width:25%;background:var(--blue)"></i></div></div>
+  <div class="list" style="margin-top:22px;padding:8px 18px" id="hold"></div>
+  <p class="mut" style="font-size:12px;margin-top:8px">Grey line = your <span class="capv">30</span>% max.</p>
+  <div class="list" style="margin-top:16px">
+    <button class="row" data-sheet="auto"><span class="grow">Autopilot</span><span class="mut sm" id="autoSum">2 on</span><span class="chev">›</span></button>
+    <button class="row" data-sheet="mandate"><span class="grow">What you asked for</span><span class="chev">›</span></button>
+    <button class="row" data-sheet="activity"><span class="grow">What <span class="nm">Mochi</span>'s been up to</span><span class="chev">›</span></button>
+  </div>
+</section>
+
+<nav class="tabs" id="tabs" aria-label="Main"></nav>
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetT"><div class="grab"></div><div id="sheetBody"></div><button class="btn" id="sheetClose" style="margin-top:22px">Done</button></div>
+</div>
+
+<script>
+{
+const $=s=>document.querySelector(s),app=$('#app');
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const st={name:'Mochi',pers:'balanced',cap:30,ask:25,amt:20,tok:'USDC',why:'facts',trimmed:null,night:false,wx:'sun',total:248.6,wallet:{USDC:120,ETH:340,cbBTC:90},paused:false,weekly:10,
+  auto:{reb:true,weekly:true,tp:false},log:[],plan:null};
+const NAMES={NVDA:'NVIDIA',MSFT:'Microsoft',GOOGL:'Alphabet',META:'Meta',AAPL:'Apple',AMZN:'Amazon',TSLA:'Tesla',MSTR:'Strategy',SNDK:'SanDisk'};
+const DIETS={ai:{label:'AI growth',text:'AI and robots. Skip Tesla.',theme:'AI',pool:[['NVDA',30],['MSFT',25],['GOOGL',25],['META',20]]},
+  big:{label:'Big tech',text:'The big apps I use every day.',theme:'big tech',pool:[['AAPL',30],['MSFT',25],['AMZN',25],['GOOGL',20]]},
+  spicy:{label:'Spicy',text:'Spicy stuff. Fast movers.',theme:'fast movers',pool:[['TSLA',40],['MSTR',35],['SNDK',25]]}};
+
+function pet(mood,size){
+  const id='g'+Math.random().toString(36).slice(2,7),ink='#14193A';
+  const face=mood==='happy'
+    ?`<path d="M60 120Q72 104 84 120M116 120Q128 104 140 120" stroke="${ink}" stroke-width="7" stroke-linecap="round" fill="none"/><path d="M84 146Q100 162 116 146" stroke="${ink}" stroke-width="6" stroke-linecap="round" fill="none"/>`
+    :mood==='sleep'
+    ?`<path d="M60 116Q72 128 84 116M116 116Q128 128 140 116" stroke="${ink}" stroke-width="6" stroke-linecap="round" fill="none"/><circle cx="100" cy="150" r="5" fill="${ink}"/><text x="150" y="40" font-family="Fredoka" font-weight="600" font-size="26" fill="#A3B4FF">z</text><text x="170" y="20" font-family="Fredoka" font-weight="600" font-size="18" fill="#A3B4FF">z</text>`
+    :mood==='sad'
+    ?`<path d="M58 96L84 88M116 88L142 96" stroke="${ink}" stroke-width="5" stroke-linecap="round"/><ellipse cx="72" cy="118" rx="11" ry="13" fill="${ink}"/><ellipse cx="128" cy="118" rx="11" ry="13" fill="${ink}"/><circle cx="68" cy="113" r="4" fill="#fff"/><circle cx="124" cy="113" r="4" fill="#fff"/><path d="M86 156Q100 144 114 156" stroke="${ink}" stroke-width="6" stroke-linecap="round" fill="none"/><path d="M164 84C170 94 170 100 164 102 158 100 158 94 164 84Z" fill="#7CC4FF"/>`
+    :mood==='chomp'
+    ?`<path d="M60 120Q72 104 84 120M116 120Q128 104 140 120" stroke="${ink}" stroke-width="7" stroke-linecap="round" fill="none"/><ellipse cx="100" cy="152" rx="20" ry="16" fill="${ink}"/><ellipse cx="100" cy="160" rx="11" ry="6" fill="#FF8FA6"/>`
+    :`<ellipse cx="72" cy="116" rx="11" ry="13" fill="${ink}"/><ellipse cx="128" cy="116" rx="11" ry="13" fill="${ink}"/><circle cx="68" cy="111" r="4" fill="#fff"/><circle cx="124" cy="111" r="4" fill="#fff"/><path d="M88 146Q100 154 112 146" stroke="${ink}" stroke-width="6" stroke-linecap="round" fill="none"/>`;
+  const think=mood==='think'?`<circle cx="160" cy="70" r="7" fill="#C9D4FF"/><circle cx="176" cy="48" r="10" fill="#C9D4FF"/>`:'';
+  return `<svg width="${size}" height="${Math.round(size*1.1)}" viewBox="0 0 200 220" role="img" aria-label="Pet, ${mood==='sleep'?'asleep':mood==='think'?'thinking':'happy'}"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9FF2C6"/><stop offset="1" stop-color="#3FCB8A"/></linearGradient></defs><ellipse cx="100" cy="206" rx="62" ry="8" fill="#0E1530" opacity=".08"/><path d="M100 50C100 38 102 30 100 20" stroke="#2BB673" stroke-width="6" stroke-linecap="round" fill="none"/><ellipse cx="86" cy="22" rx="15" ry="8" fill="#3DD68C" transform="rotate(-28 86 22)"/><ellipse cx="114" cy="22" rx="15" ry="8" fill="#3DD68C" transform="rotate(28 114 22)"/><ellipse cx="100" cy="126" rx="82" ry="78" fill="url(#${id})"/><ellipse cx="66" cy="84" rx="18" ry="11" fill="#fff" opacity=".4"/><ellipse cx="54" cy="142" rx="13" ry="8" fill="#FF8FA6" opacity=".55"/><ellipse cx="146" cy="142" rx="13" ry="8" fill="#FF8FA6" opacity=".55"/>${face}${think}</svg>`;
+}
+
+/* navigation */
+const icons={home:'<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>',chat:'<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 21 12z"/>',portfolio:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'};
+const tabIds=['home','chat','portfolio'],screens=['welcome','name','pers','brief','rules','think','proposal','home','feed','chat','portfolio'];
+function tabs(id){
+  $('#tabs').classList.toggle('on',tabIds.includes(id));
+  $('#tabs').innerHTML=tabIds.map(t=>`<button class="tab" data-go="${t}" ${t===id?'aria-current="page"':''}>${t==='chat'&&st.trimmed===null?'<span class="badge" aria-label="Needs your OK"></span>':''}<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${icons[t]}</svg>${t[0].toUpperCase()+t.slice(1)}</button>`).join('');
+}
+function go(id){
+  if(!screens.includes(id))id='welcome';
+  if(!st.plan&&['proposal','home','feed','chat','portfolio'].includes(id))buildPlan();
+  closeSheet();
+  for(const s of screens)$('#'+s).classList.toggle('on',s===id);
+  tabs(id);
+  if(id==='feed'){$('#fForm').style.display='flex';$('#fDone').style.display='none';rFeed()}
+  if(id==='portfolio')rHold();
+  if(id==='chat')chips();
+  if(id==='proposal')rProp();
+  if(id==='rules')rRules();
+  try{if(location.hash.slice(1)!==id)history.replaceState(null,'','#'+id)}catch(e){}
+}
+document.addEventListener('click',e=>{const g=e.target.closest('[data-go]');if(g)go(g.dataset.go);const s=e.target.closest('[data-sheet]');if(s)openSheet(s.dataset.sheet)});
+addEventListener('hashchange',()=>go(location.hash.slice(1)));
+const nm=()=>st.name||'Mochi';
+function names(){for(const n of document.querySelectorAll('.totv'))n.textContent='$'+st.total.toFixed(2);
+  for(const n of document.querySelectorAll('.nm'))n.textContent=nm();
+  for(const n of document.querySelectorAll('.capv'))n.textContent=st.cap;
+  if(st.plan&&st.trimmed===null){for(const n of document.querySelectorAll('.lead'))n.textContent=NAMES[st.plan.lead];$('#leadNow').textContent=Math.round((st.plan.w[st.plan.lead]+.06)*100)}
+}
+$('#petName').addEventListener('input',e=>{st.name=e.target.value.trim();names()});
+
+/* personality */
+const PERS=[['calm','Calm','Slow and steady wins',25,10],['balanced','Balanced','Some ups, some downs',30,25],['spicy','Spicy','Lives for the swings',35,50]];
+function rPers(){
+  $('#persList').innerHTML=PERS.map(o=>`<button class="opt" role="radio" aria-checked="${o[0]===st.pers}" data-v="${o[0]}"><span><span class="t">${o[1]}</span><span class="d">${o[2]}</span></span><span class="radio" aria-hidden="true"></span></button>`).join('');
+}
+$('#persList').addEventListener('click',e=>{const b=e.target.closest('[data-v]');if(!b)return;const p=PERS.find(x=>x[0]===b.dataset.v);st.pers=p[0];st.cap=p[3];st.ask=p[4];rPers()});
+
+/* brief */
+$('#diets').innerHTML=Object.entries(DIETS).map(([k,d])=>`<button class="chip" aria-pressed="${k==='ai'}" data-d="${k}">${d.label}</button>`).join('')+`<button class="chip" aria-pressed="false" data-x="Skip crypto companies">+ Skip crypto companies</button>`;
+$('#diets').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;const t=$('#briefTxt');
+  if(b.dataset.d){for(const c of document.querySelectorAll('[data-d]'))c.setAttribute('aria-pressed',c===b);t.value=DIETS[b.dataset.d].text}
+  else{t.value=t.value.trim().replace(/\.?$/,'. ')+b.dataset.x+'.';b.setAttribute('aria-pressed','true')}
+  st.plan=null;
+});
+$('#briefTxt').addEventListener('input',()=>{st.plan=null});
+
+/* rules */
+function pick(el,vals,key,fmt){
+  el.innerHTML=vals.map(v=>`<button role="radio" aria-checked="${v===st[key]}" data-v="${v}">${fmt(v)}</button>`).join('');
+  el.onclick=e=>{const b=e.target.closest('[data-v]');if(b){st[key]=+b.dataset.v;st.plan=null;pick(el,vals,key,fmt);names()}};
+}
+function rRules(){$('#persName').textContent=st.pers;pick($('#capPick'),[20,25,30,35],'cap',v=>v+'%');pick($('#askPick'),[10,25,50,100],'ask',v=>'$'+v)}
+
+/* the agent's plan */
+function buildPlan(){
+  const t=$('#briefTxt').value.toLowerCase();
+  const diet=/spicy|fast/.test(t)?'spicy':/big tech|every day|apple|amazon/.test(t)?'big':'ai';
+  const excl=[];if(/(no|not|without|exclude|skip)\s+tesla/.test(t))excl.push('TSLA');if(/(no|skip) crypto/.test(t))excl.push('MSTR');
+  const pool=DIETS[diet].pool.filter(p=>!excl.includes(p[0]));
+  const cap=st.cap/100,sum=pool.reduce((a,p)=>a+p[1],0);
+  let w={};pool.forEach(p=>w[p[0]]=p[1]/sum);
+  for(let i=0;i<6;i++){let extra=0,free=[];for(const k in w){if(w[k]>cap){extra+=w[k]-cap;w[k]=cap}else if(w[k]<cap-1e-9)free.push(k)}
+    if(extra<1e-9||!free.length)break;const fs=free.reduce((a,k)=>a+w[k],0);for(const k of free)w[k]+=extra*w[k]/fs}
+  const cash=Math.max(0,1-Object.values(w).reduce((a,b)=>a+b,0));
+  st.plan={diet,theme:DIETS[diet].theme,excl,w,cash,lead:pool[0][0],robot:/robot/.test(t),brief:$('#briefTxt').value.trim()};
+  names();
+}
+function held(){const p=st.plan,o={};if(st.trimmed){for(const k in p.w)o[k]=p.w[k];return o}
+  const inv=1-p.cash,others=inv-p.w[p.lead];for(const k in p.w)o[k]=k===p.lead?p.w[k]+.06:p.w[k]*(others-.06)/others;return o}
+
+$('#research').addEventListener('click',()=>{
+  buildPlan();go('think');$('#tPet').innerHTML=pet('think',170);
+  const p=st.plan,steps=[['Reading what you wrote','✓'],['Going through the 10 stocks on Base','✓']];
+  if(p.robot)steps.push(['Hunting for robot stocks… none yet','!']);
+  if(p.excl.length)steps.push(['Crossing off '+p.excl.map(k=>NAMES[k]).join(' and '),'✓']);
+  steps.push(['Skimming earnings and news','✓'],['Keeping everything under '+st.cap+'%','✓']);
+  $('#stepList').innerHTML=steps.map(s=>`<div class="step"><span class="ic" aria-hidden="true">${s[1]}</span><span>${s[0]}</span></div>`).join('');
+  const els=[...document.querySelectorAll('#stepList .step')];
+  els.forEach((el,i)=>setTimeout(()=>el.classList.add('on'),400+i*520));
+  setTimeout(()=>go('proposal'),400+els.length*520+500);
+});
+
+function rProp(){
+  const p=st.plan,f=[];
+  if(p.robot)f.push(`<div class="note"><b>No robot stocks yet</b>There are only 10 stocks on Base right now, and none of them make robots. ${p.diet==='ai'?'NVIDIA makes the chips robots run on, so that\'s the closest I could get.':'So I left robots out for now.'}</div>`);
+  if(p.cash>.005)f.push(`<div class="note"><b>${Math.round(p.cash*100)}% sits in USDC for now</b>Only ${Object.keys(p.w).length} stocks match what you asked for, and none can go over ${st.cap}%. I'd rather hold cash than break your rule.</div>`);
+  $('#flags').innerHTML=f.join('');$('#flags').style.display=f.length?'flex':'none';
+  $('#plate').innerHTML=Object.keys(p.w).map(k=>`<div class="row blk"><span class="sp"><span style="font-weight:600">${NAMES[k]}</span><span style="font-weight:600">${Math.round(p.w[k]*100)}%</span></span><div class="bar"><i style="width:${p.w[k]*100}%"></i></div></div>`).join('')
+    +(p.cash>.005?`<div class="row blk"><span class="sp"><span style="font-weight:600">Stays in USDC</span><span style="font-weight:600">${Math.round(p.cash*100)}%</span></span><div class="bar"><i style="width:${p.cash*100}%;background:var(--mut)"></i></div></div>`:'');
+  $('#plateNote').textContent=(p.excl.length?p.excl.map(k=>NAMES[k]).join(' and ')+'\'s out, like you asked. ':'')+`Nothing over ${st.cap}%.`;
+  rWhy();
+}
+const whyTabs=[['facts','Facts'],['assume','Assuming'],['opinion','My take']];
+function whyData(){
+  const p=st.plan,n=Object.keys(p.w).length,lead=NAMES[p.lead];
+  return {facts:[[`All ${n} are live on Base right now.`,'Base Tokenized Stocks API'],[`Each one fits what you asked for: ${p.theme}.`,'Company earnings reports'],...(p.excl.length?[[p.excl.map(k=>NAMES[k]).join(' and ')+'\'s off the list.','You said so']]:[])],
+   assume:[["You're in this for a year or more, not a week.",''],[`People keep spending big on ${p.theme}.`,''],["You're okay with these moving together. Same theme, same mood swings.",'']],
+   opinion:[[`${lead} fits best, so it gets the biggest bite. Never over your max, though.`,''],[`Heads up: it's all one theme. When ${p.theme} has a bad week, so will I.`,'']]};
+}
+function rWhy(){
+  const d=whyData();
+  $('#why').innerHTML=whyTabs.map(t=>`<button role="tab" aria-selected="${t[0]===st.why}" data-w="${t[0]}">${t[1]}</button>`).join('');
+  $('#whyBody').innerHTML=`<div class="list">${d[st.why].map(f=>`<div class="row blk"><p style="font-size:15px">${f[0]}</p>${f[1]?`<p class="src">Source: ${f[1]}</p>`:''}</div>`).join('')}</div>`;
+}
+$('#why').addEventListener('click',e=>{const b=e.target.closest('[data-w]');if(b){st.why=b.dataset.w;rWhy()}});
+$('#approve').addEventListener('click',()=>{st.log=[];log('Made your plan','You said it looked good.');st.trimmed=null;go('home')});
+
+/* garden scene: the weather is the market */
+function scene(w){
+  const sky={sun:['#BFE6FF','#FFF1D6'],rain:['#AEB8CC','#E4E7EE'],night:['#1B2347','#34407A']}[w];
+  const hillB=w==='night'?'#2F5A4C':'#9BE3B5',hillF=w==='night'?'#3E7360':'#7ED6A2';
+  let extra='';
+  if(w==='sun')extra=`<circle cx="300" cy="62" r="46" fill="#FFE9A8" opacity=".55"/><circle cx="300" cy="62" r="30" fill="#FFD66B"/><g fill="#fff" opacity=".95"><ellipse cx="80" cy="70" rx="38" ry="16"/><ellipse cx="108" cy="60" rx="26" ry="16"/><ellipse cx="210" cy="110" rx="28" ry="11"/></g>`;
+  if(w==='rain')extra=`<g fill="#8E98AE"><ellipse cx="110" cy="64" rx="56" ry="22"/><ellipse cx="150" cy="52" rx="36" ry="22"/><ellipse cx="250" cy="80" rx="50" ry="20"/></g><g stroke="#7FA6D6" stroke-width="3" stroke-linecap="round" opacity=".8">${[60,90,120,150,180,210,240,270,300].map((x,i)=>`<path d="M${x} ${100+(i%3)*14}l-6 14"/>`).join('')}</g>`;
+  if(w==='night')extra=`${[[40,40],[90,90],[150,30],[200,70],[250,26],[320,110],[60,130],[180,120]].map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="2" fill="#fff" opacity=".85"/>`).join('')}<circle cx="296" cy="64" r="26" fill="#FFF1C2"/><circle cx="308" cy="56" r="24" fill="#2A3463"/>`;
+  const flowers=w==='night'?'':`<g>${[[60,268,'#FF9AB0'],[96,284,'#FFD66B'],[262,276,'#FF9AB0'],[300,262,'#fff'],[320,286,'#FFD66B']].map(f=>`<circle cx="${f[0]}" cy="${f[1]}" r="6" fill="${f[2]}"/><circle cx="${f[0]}" cy="${f[1]}" r="2.5" fill="#E0A93B"/>`).join('')}</g>`;
+  return `<defs><linearGradient id="sky${w}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${sky[0]}"/><stop offset="1" stop-color="${sky[1]}"/></linearGradient></defs><rect width="360" height="330" fill="url(#sky${w})"/>${extra}<ellipse cx="80" cy="300" rx="220" ry="80" fill="${hillB}"/><ellipse cx="300" cy="320" rx="200" ry="90" fill="${hillF}"/>${flowers}`;
+}
+function sceneHTML(w,mood,size){return `<svg viewBox="0 0 360 330" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${scene(w)}</svg><div class="pet">${pet(mood,size)}</div>`}
+const WX=['sun','rain','night'];
+/* home */
+function rHome(){
+  const w=st.wx;st.night=w==='night';
+  $('#hSky').setAttribute('viewBox','0 0 360 330');$('#hSky').setAttribute('preserveAspectRatio','xMidYMid slice');$('#hSky').innerHTML=scene(w);
+  $('#hPet').innerHTML=pet(w==='night'?'sleep':w==='rain'?'sad':'happy',150);
+  app.classList.toggle('night',st.night);$('#hScene').classList.toggle('sleep',st.night);
+  $('#mktTxt').textContent={sun:'Sunny · market\'s up',rain:'Rainy · rough day',night:'Night · market\'s closed'}[w]+'  ↻';
+  $('#moodTxt').textContent={sun:'Feeling great. Fed 4 weeks in a row.',rain:'A bit gloomy. Holding steady, not panicking.',night:'Asleep. Prices freeze at night, so no trades till morning.'}[w];
+  $('#chgL').textContent=w==='rain'?'Today':'This month';$('#chg').textContent=w==='rain'?'−3.1%':'+8.0%';$('#chg').className=w==='rain'?'down':'up';
+}
+$('#market').addEventListener('click',()=>{st.wx=WX[(WX.indexOf(st.wx)+1)%3];rHome();rFeed()});
+$('#lvl').innerHTML=[1,2,3,4,5].map(i=>`<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 19C5 10 11 5 20 4c0 9-5 15-14 15z" fill="${i<=3?'#3DBE7E':'#E3DACA'}"/></svg>`).join('');
+
+/* feed */
+const TOK=new Proxy({},{get:(o,k)=>'$'+(st.wallet[k]??0).toFixed(2)+' left',ownKeys:()=>['USDC','ETH','cbBTC'],getOwnPropertyDescriptor:()=>({enumerable:true,configurable:true})});
+function rFeed(){
+  $('#tokens').innerHTML=Object.keys(TOK).map(k=>`<button role="radio" aria-checked="${k===st.tok}" data-t="${k}">${k}</button>`).join('');
+  $('#tokNote').textContent=st.tok==='USDC'?`From your USDC · ${TOK.USDC}`:`${nm()} swaps your ${st.tok} for stocks · ${TOK[st.tok]}`;
+  $('#amt').textContent='$'+st.amt;
+  $('#feedBtn').textContent=st.night?`Save $${st.amt} for the morning`:`Feed $${st.amt}`;
+  $('#presets').innerHTML=[10,20,50,100].map(v=>`<button role="radio" aria-checked="${v===st.amt}" data-a="${v}">$${v}</button>`).join('');
+}
+$('#tokens').addEventListener('click',e=>{const b=e.target.closest('[data-t]');if(b){st.tok=b.dataset.t;rFeed()}});
+$('#presets').addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(b){st.amt=+b.dataset.a;rFeed()}});
+$('#feedBtn').addEventListener('click',()=>{if(st.amt>st.wallet[st.tok]){openSheet('short');return}if(st.amt>st.ask){openSheet('confirm');return}doFeed()});
+function doFeed(){
+  closeSheet();const n=Object.keys(st.plan.w).length;
+  st.wallet[st.tok]-=st.amt;st.total+=st.amt;names();
+  log(st.night?'Saved a feed':'Bought '+n+' stocks',`You fed $${st.amt} of ${st.tok}${st.tok!=='USDC'?'. Swapped it for stocks on Base and':','} split it the way we planned.${st.night?' Buying in the morning.':''}`,st.amt);
+  $('#fPet').innerHTML=pet('chomp',170);const z=$('#dropZone');z.classList.remove('drop');void z.offsetWidth;z.classList.add('drop');
+  setTimeout(()=>{$('#fPet').innerHTML=pet('happy',170)},900);
+  $('#fedTxt').textContent=st.night?`${nm()} will eat it when the market opens.`:`That was $${st.amt} of ${st.tok}. Now it's ${n} stocks.`;
+  $('#fForm').style.display='none';$('#fDone').style.display='flex';
+}
+
+/* chat: Mochi understands plain requests; anything that touches money becomes a yes/no card */
+const ALIAS={nvidia:'NVDA',nvda:'NVDA',microsoft:'MSFT',msft:'MSFT',google:'GOOGL',alphabet:'GOOGL',googl:'GOOGL',youtube:'GOOGL',meta:'META',facebook:'META',instagram:'META',apple:'AAPL',aapl:'AAPL',iphone:'AAPL',amazon:'AMZN',amzn:'AMZN',tesla:'TSLA',tsla:'TSLA',microstrategy:'MSTR',strategy:'MSTR',mstr:'MSTR',sandisk:'SNDK',sndk:'SNDK'};
+const MISSING=['netflix','amd','palantir','coinbase','intel','uber','spotify','disney','nike','boston dynamics','samsung','tsmc','robinhood','paypal','berkshire'];
+const ABOUT={NVDA:'Makes the chips most AI runs on.',MSFT:'Runs a huge cloud business and backs a lot of AI tools.',GOOGL:'Owns Google Search, YouTube and its own AI models.',META:'Owns Instagram, WhatsApp and Facebook, and spends big on AI.',AAPL:'Makes the iPhone, Mac and AirPods.',AMZN:'Runs online shopping and the AWS cloud.',TSLA:'Makes electric cars and is building robots.',MSTR:'Holds a lot of Bitcoin, so it moves like crypto.',SNDK:'Makes memory and storage chips.'};
+const CHG={NVDA:14.2,MSFT:5.1,GOOGL:6.8,META:-2.3,AAPL:3.4,AMZN:4.0,TSLA:9.5,MSTR:-6.1,SNDK:7.7};
+const money=v=>'$'+v.toFixed(2),cap1=s=>s.replace(/\b\w/g,c=>c.toUpperCase());
+function findStock(t){for(const k in ALIAS)if(new RegExp('\\b'+k+'\\b').test(t))return ALIAS[k];return null}
+function fit(raw){
+  const cap=st.cap/100,tot=Object.values(raw).reduce((a,b)=>a+b,0),w={};for(const k in raw)w[k]=raw[k]/tot;
+  for(let i=0;i<8;i++){let extra=0,free=[];for(const k in w){if(w[k]>cap){extra+=w[k]-cap;w[k]=cap}else if(w[k]<cap-1e-9)free.push(k)}
+    if(extra<1e-9||!free.length)break;const fs=free.reduce((a,k)=>a+w[k],0);for(const k of free)w[k]+=extra*w[k]/fs}
+  return w;
+}
+function setW(w){const p=st.plan;p.w=w;p.cash=Math.max(0,1-Object.values(w).reduce((a,b)=>a+b,0));p.lead=Object.keys(w).sort((a,b)=>w[b]-w[a])[0];st.trimmed=true;tabs('chat')}
+function bubble(cls,html){const d=document.createElement('div');d.className='bub '+cls;d.innerHTML=html;$('#msgs').append(d);d.scrollIntoView({behavior:'smooth',block:'end'});return d}
+function say(html,tag){return bubble('pb',(tag?`<span class="tag">${tag}</span><br>`:'')+html)}
+function card(title,body,yes,onYes,noMsg){
+  const d=bubble('pb',`<p style="font:600 18px Fredoka,system-ui,sans-serif">${title}</p><p class="mut sm" style="margin-top:4px">${body}</p><div class="cb" style="display:flex;gap:8px;margin-top:14px"><button class="btn s">${yes}</button><button class="btn s alt" style="background:var(--bg)">Hold on</button></div>`);
+  d.style.maxWidth='92%';d.style.padding='18px';const [y,n]=d.querySelectorAll('.cb button');
+  y.onclick=()=>{d.querySelector('.cb').outerHTML='<p class="up" style="margin-top:12px;font-size:14px">✓ You said yes</p>';setTimeout(()=>{say(onYes());chips()},300)};
+  n.onclick=()=>{d.querySelector('.cb').outerHTML='<p class="mut" style="margin-top:12px;font-size:14px">You said hold on</p>';setTimeout(()=>{say(noMsg||'No problem. Nothing changed.');chips()},300)};
+}
+function log(a,b,amt){const hex='0x'+Array.from({length:8},()=>Math.floor(Math.random()*16).toString(16)).join('')+'…'+Array.from({length:4},()=>Math.floor(Math.random()*16).toString(16)).join('');const t=new Date();st.log.unshift([a,'Today',b,hex,amt||null,t.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})])}
+function answer(yes){
+  st.trimmed=yes;tabs('chat');const lead=NAMES[st.plan.lead];
+  $('#ask').outerHTML=`<p class="${yes?'up':'mut'}" style="margin-top:12px;font-size:14px">${yes?'✓ You said yes':'You said hold on'}</p>`;
+  if(yes)log('Sold a bit of '+lead,`It got too big (over ${st.cap}%). Moved $14.92 into your other stocks.`);
+  setTimeout(()=>{say(yes?`Done. ${lead}'s back in line.`:`Cool, I'll wait. I won't buy any more ${lead} while it's over your max, though.`);chips()},300);
+}
+$('#yes').addEventListener('click',()=>answer(true));$('#no').addEventListener('click',()=>answer(false));
+
+function reply(text){
+  const t=(' '+text.toLowerCase().replace(/[’']/g,"'").replace(/[?!.,]/g,' ')+' ').replace(/ u /g,' you ').replace(/ ur /g,' your ').replace(/ r /g,' are ').replace(/ hw /g,' how ').replace(/ wat | wht /g,' what ').replace(/ pls | plz /g,' please ').replace(/\s+/g,' ');
+  const p=st.plan,h=held(),k=findStock(t),miss=MISSING.find(m=>t.includes(m)),total=st.total,inv=Object.keys(p.w);
+  const n=(t.match(/(\d+(?:\.\d+)?)/)||[])[1],num=n?+n:null,lead=NAMES[p.lead];
+  if(/\bhelp\b(?! me)|what can you|options|menu/.test(t))
+    return say(`Loads. Just ask in normal words:<br>• "How am I doing?" or "any news?"<br>• "Feed $10" or "sell $5 of Meta"<br>• "Add Apple" or "drop Meta"<br>• "Change my max to 35%"<br>• "Pause trading"<br>• "What if the market crashes?"<br>• "Help me hit my goal"<br>Anything that moves money, I'll check with you first.`);
+  if(/\b(resume|unpause|start trading|wake up)\b/.test(t)){st.paused=false;log('Back to work','You said resume.');return say(`I'm back on it. I'll follow your rules like before.`)}
+  if(/\b(pause|stop trading|freeze|stop buying)\b/.test(t)){st.paused=true;log('Paused trading','You asked me to stop for now.');return say(`Paused. I won't buy or sell anything until you say "resume". Your stocks stay right where they are.`)}
+  if(/(max|limit|cap)/.test(t)&&num){
+    if(num<10||num>60)return say(`Let's keep it between 10% and 60%. Lower than that and I can't build a plan, higher and one stock could sink you.`);
+    if(num===st.cap)return say(`Your max is already ${num}%.`);
+    return card(`Change your max to ${num}%?`,num>st.cap?`More room for your top stocks, but bigger swings.`:`Spreads things out more. I might need to hold some USDC.`,`Set ${num}%`,()=>{st.cap=num;setW(fit(p.w));names();log('Changed your max',`From your chat: max is now ${num}%.`);return `Done. Your max is ${num}% now.${p.cash>.005?` ${Math.round(p.cash*100)}% sits in USDC because there isn't room for it.`:' Everything fits.'}`});
+  }
+  if(/(sell|cash out|withdraw)/.test(t)&&/(everything|all of it|all my)/.test(t))
+    {setTimeout(()=>openSheet('cashout'),500);return say(`Sure. Cashing out needs your fingerprint, so I've opened it for you.`,'Needs your fingerprint')}
+  if(/(sell|trim|take profit)/.test(t)&&k){
+    if(!(k in p.w))return say(`You don't own any ${NAMES[k]}.`);
+    const pos=st.total*h[k],amt=Math.min(num||pos*.25,pos);
+    if(st.paused)return say(`You paused me. Say "resume" first and I'll do it.`);
+    return card(`Sell ${money(amt)} of ${NAMES[k]}?`,`That goes back to USDC. You'd still own ${money(pos-amt)} of it.`,'Sell',()=>{p.w[k]=Math.max(0,h[k]-amt/st.total);for(const x in p.w)if(x!==k)p.w[x]=h[x];p.cash=Math.max(0,1-Object.values(p.w).reduce((a,b)=>a+b,0));st.trimmed=true;tabs('chat');log('Sold some '+NAMES[k],`You asked in chat. ${money(amt)} went back to USDC.`);return `Sold. ${money(amt)} is back in your USDC.`});
+  }
+  if(/(feed|invest|put in|top up)/.test(t)&&num&&!k){
+    if(st.paused)return say(`You paused me. Say "resume" first.`);
+    return card(`Feed ${money(num)}?`,`From your USDC, split the way we planned.${num>st.ask?` That's over the $${st.ask} you said to check on, which is why I'm asking.`:''}`,`Feed ${money(num)}`,()=>{if(num>st.wallet.USDC)return `You only have ${money(st.wallet.USDC)} of USDC. Add money from Portfolio first.`;st.wallet.USDC-=num;st.total+=num;names();log('Bought '+Object.keys(p.w).length+' stocks',`You fed ${money(num)} from chat.`,num);return st.night?`Saved. I'll eat it when the market opens.`:`Yum. ${money(num)} is now stocks.`});
+  }
+  if(/(buy more|more of|double down)/.test(t)){
+    const s=k||p.lead;if(!(s in p.w))return say(`${NAMES[s]} isn't in your plan. Want me to add it? Just say "add ${NAMES[s]}".`);
+    const v=Math.round(h[s]*100);
+    return v>=st.cap?say(`${NAMES[s]}'s already at ${v}% and your max is ${st.cap}%. You set that rule, so I'm sticking to it. You can change it, just say "change my max to ${Math.min(60,st.cap+5)}%".`,'Nope')
+      :card(`Buy more ${NAMES[s]}?`,`It's at ${v}%. There's room for about ${st.cap-v}% more before your max.`,`Buy ${money(st.total*(st.cap-v)/100)}`,()=>{const raw={...p.w};raw[s]=st.cap/100;setW(raw);log('Bought more '+NAMES[s],'You asked in chat.');return `Done. ${NAMES[s]} is at your max now.`});
+  }
+  if(/robot/.test(t))return say(`No robot stocks on Base yet. Tesla is building robots, if you want something close. Otherwise I'll ping you the day a real one shows up.`,'Not yet');
+  if(/(add|include|want some|get me|buy)/.test(t)&&miss&&!k)return say(`${cap1(miss)} isn't on Base yet, so I can't buy it. There are only 10 stocks for now. I'll let you know if it gets listed.`,'Not available');
+  if(/(add|include|want some|get me|buy)/.test(t)&&k){
+    if(k in p.w)return say(`You already own ${NAMES[k]}. It's ${Math.round(h[k]*100)}% of everything.`);
+    const was=p.excl.includes(k);
+    return card(`Add ${NAMES[k]} at 10%?`,`${was?'You told me to skip it earlier. This would undo that. ':''}I'd take a little from each of your other stocks to make room.`,'Add it',()=>{p.excl=p.excl.filter(x=>x!==k);const raw={...p.w};for(const x in raw)raw[x]*=.9;raw[k]=.1;setW(fit(raw));log('Added '+NAMES[k],'You asked in chat. Took a little from the rest.');return `${NAMES[k]}'s in. ${ABOUT[k]}`});
+  }
+  if(/(remove|drop|skip|get rid|no more|sell all)/.test(t)&&k){
+    if(!(k in p.w))return say(`You don't own any ${NAMES[k]}, so nothing to drop.`);
+    if(Object.keys(p.w).length<=2)return say(`That would leave you with one stock. Too risky for me. Add something else first?`);
+    return card(`Drop ${NAMES[k]}?`,`I'd sell it and spread the money across the rest. I won't buy it again unless you ask.`,'Drop it',()=>{const raw={...p.w};delete raw[k];p.excl.push(k);setW(fit(raw));log('Dropped '+NAMES[k],'You asked in chat.');return `${NAMES[k]}'s gone. The money's spread across your other stocks.`});
+  }
+  if(/why/.test(t)&&k)return say(`${ABOUT[k]}<span class="src" style="display:block">Source: company reports</span><br><span class="tag">My take</span><br>${k in p.w?`It's ${Math.round(h[k]*100)}% of your stuff because it fits "${esc(p.theme)}".`:`It's not in your plan because it doesn't really fit "${esc(p.theme)}".`}`,'Fact');
+  if(/why/.test(t))return say(`They're all live on Base and fit what you asked for (${esc(p.theme)}).<span class="src" style="display:block">Source: Base Tokenized Stocks API</span><br><span class="tag">My take</span><br>${lead} fits best, so it leads.`,'Fact');
+  if(/(best|top|winner)/.test(t)||/(worst|loser|weakest)/.test(t)){
+    const ks=Object.keys(p.w).sort((a,b)=>CHG[b]-CHG[a]),b=ks[0],w=ks[ks.length-1];
+    return say(`Best: ${NAMES[b]}, ${CHG[b]>0?'+':''}${CHG[b]}% this month.<br>Worst: ${NAMES[w]}, ${CHG[w]>0?'+':''}${CHG[w]}%.<br>One bad month isn't a reason to sell. I'm watching it.`);
+  }
+  if(/(crash|risk|worst case|scared|safe|lose)/.test(t))return say(`Tech stocks fell about a third in 2022, and they've had other big drops too.<span class="src" style="display:block">Source: Nasdaq history</span><br><span class="tag">Assuming</span><br>A plate like yours could drop 30% or more in a bad year.<br><br><span class="tag">My take</span><br>Only put in money you won't need for a few years. Want it calmer? Say "change my max to 25%".`,'Fact');
+  if(/(goal|1,?000|target|on track)/.test(t)){
+    const need=1000-st.total,wk=Math.ceil(need/27);
+    return card(`Feed $${wk} every Friday?`,`You need about $${Math.round(need)} more by June. That's roughly $${wk} a week, even if the market goes nowhere.`,`Set $${wk}/week`,()=>{st.auto.weekly=true;st.weekly=wk;log('Set a weekly feed',`$${wk} every Friday, for your $1,000 goal.`);return `Done. $${wk} every Friday. I'll tell you if we fall behind.`});
+  }
+  if(k&&/(how much|how many|worth|value|own|have|holding|my )/.test(t)&&!/(buy|sell|add|drop|why)/.test(t))
+    return k in p.w?say(`You've got ${money(total*h[k])} of ${NAMES[k]}. That's ${Math.round(h[k]*100)}% of everything, and it's ${CHG[k]>0?'up':'down'} ${Math.abs(CHG[k])}% this month.`):say(`You don't own any ${NAMES[k]} right now. Want some? Say "add ${NAMES[k]}".`);
+  if(/(cash out|cashout|withdraw|take (my )?money out)/.test(t)){setTimeout(()=>openSheet('cashout'),500);return say(`Sure. Cashing out needs your fingerprint, so I've opened it for you.`)}
+  if(/(add money|deposit|fund my|send money|top up my wallet|receive)/.test(t)){setTimeout(()=>openSheet('deposit'),500);return say(`Here's your wallet address. Send USDC, ETH or cbBTC on Base, then feed me.`)}
+  if(/(usdc|cash|wallet|spare|available)/.test(t))return say(`You have ${money(st.wallet.USDC)} of USDC in your wallet, ready to feed me.${p.cash>.005?` Another ${money(total*p.cash)} is parked inside your plan because of your max.`:''}`);
+  if(/(how much|balance|worth|total|my money|portfolio|plate|stash|what do i (have|own)|what'?s in|holdings|what am i holding|net worth|value)/.test(t))
+    return say(`You've got <b>${money(total)}</b> in total, up 8% this month.<br>`+inv.sort((a,b)=>h[b]-h[a]).map(x=>`• ${NAMES[x]}: ${money(total*h[x])}`).join('<br>')+(p.cash>.005?`<br>• USDC: ${money(total*p.cash)}`:'')+`<br><br>Plus ${money(st.wallet.USDC)} of USDC in your wallet, ready to feed me.`);
+  if(/(my rules|rules|settings|my max|my limit)/.test(t))return say(`Your rules:<br>• Nothing over ${st.cap}% in one company<br>• I check with you above $${st.ask}<br>• Never buy: ${p.excl.length?p.excl.map(x=>NAMES[x]).join(', '):'nothing set'}<br>• Trading: ${st.paused?'paused':'on'}<br><br>Want to change one? Just tell me, like "change my max to 35%".`);
+  if(/(plan|diet|strategy|invested in|what are you buying|theme)/.test(t))return say(`You asked for "${esc(p.brief.replace(/[.!\s]+$/,""))}", so I eat ${inv.map(x=>NAMES[x]).join(', ')}, with ${NAMES[p.lead]} getting the biggest bite.`);
+  if(/(level|streak|grow|xp)/.test(t))return say(`I'm level 3. You've fed me 4 weeks in a row. Two more weeks and I grow another leaf.`);
+  if(/(how are you|you ok|you good|feeling|mood)/.test(t))return say(st.wx==='rain'?`Bit gloomy, honestly. Rough day in the market. But we're still up for the month, so I'm not panicking.`:st.wx==='night'?`Sleepy. Market's closed. Ask me anything though.`:`Pretty great! The sun's out and we're up 8% this month.`);
+  if(/(who are you|your name|what are you)/.test(t))return say(`I'm ${esc(nm())}, your pet. I research stocks, buy what fits your plan, and always ask before anything big.`);
+  if(/(price|how much is|cost of)/.test(t)&&k)return say(`I don't have a live price in this demo. In the real app I'd pull it from the Chainlink feed on Base.`);
+  if(/(how am i|how are we|doing|performance|up or down|status|how'?s it going|gains|profit|made any money|make money|made money|making money|earn|returns|winning|losing)/.test(t))return say(`We're up 8% this month. You're a quarter of the way to $1,000.${st.paused?' Trading is paused, by the way.':''}`);
+  if(/(news|happening|today|update|morning)/.test(t))return say(`${lead} had a big week. Earnings season is here, so it could be bumpy for a few weeks. Nothing you need to do.`,'Today');
+  if(/(what is|what's|whats|explain|eli5|simple)/.test(t)&&/(stock|token|share|base)/.test(t))return say(`A stock is a tiny piece of a company. If the company does well, your piece is worth more.<br><br>Here, each stock is a token on Base, backed by a real share held by a regulated company. You own it like any other token.`);
+  if(/(fee|cost|charge)/.test(t))return say(`Network fees are covered. If you pay in ETH or cbBTC, the swap can cost a little in price difference. I show you before you confirm.`);
+  if(/(sleep|night|closed|weekend)/.test(t))return say(`Stock markets close at night and on weekends. Prices freeze, so I don't trade then. Anything you feed waits till morning.`);
+  if(/\b(hi|hello|hey|sup|yo)\b/.test(t))return say(`Hey! ${st.wx==='rain'?'Bit of a gloomy day, but I\'m holding steady.':st.wx==='night'?'*yawn* Market\'s closed, but I\'m here.':'Feeling good today.'} What's up?`);
+  if(/thank/.test(t))return say(`Anytime.`);
+  const EX=['How much do I have?','How am I doing?','What are my rules?','Feed $10','Add Apple','Sell $10 of '+NAMES[p.lead],'What if the market crashes?','Help me hit my goal','Any news?','What is a stock?','Pause trading'];
+  const words=t.split(' ').filter(x=>x.length>2),score=q=>words.filter(x=>q.toLowerCase().includes(x)).length;
+  const best=EX.map(q=>[q,score(q)]).sort((a,b)=>b[1]-a[1]).slice(0,3).map(x=>x[0]);
+  st.guess=best;
+  return say(`Not sure I got that. Did you mean one of these?`);
+}
+function chips(){
+  const p=st.plan,lead=NAMES[p.lead],other=Object.keys(p.w).find(k=>k!==p.lead),out=['AAPL','AMZN','TSLA','MSFT','GOOGL'].find(k=>!(k in p.w)&&!p.excl.includes(k));
+  const pool=['How much do I have?','How am I doing?',`Buy more ${lead}`,out?`Add ${NAMES[out]}`:'Add Netflix',`Sell $10 of ${lead}`,other?`Drop ${NAMES[other]}`:'Any news?',`Change my max to ${st.cap===35?30:35}%`,'Feed $10','What if the market crashes?','Help me hit my goal',st.paused?'Resume':'Pause trading','Best and worst?','What is a stock?','Any news?','What can you do?'];
+  st.ci=((st.ci||0)+3)%pool.length;
+  const pick=[...(st.guess||[]),...pool.slice(st.ci),...pool.slice(0,st.ci)].filter((v,i,a)=>a.indexOf(v)===i).slice(0,5);st.guess=null;
+  $('#chips').innerHTML=pick.map(q=>`<button class="chip" data-q="${esc(q)}">${esc(q)}</button>`).join('');
+}
+/* live AI: Mochi thinks with Claude when the page runs as a published artifact; keyword brain is the fallback */
+let brain=null;const convo=[];
+(async()=>{try{if(window.claude&&claude.use)brain=await claude.use('sample')}catch(e){brain=null}
+  if(brain){const n=$('#aiNote');if(n)n.style.display='block'}})();
+function stateText(){
+  const p=st.plan,h=held(),total=st.total;
+  return JSON.stringify({pet:nm(),personality:st.pers,level:3,feeding_streak_weeks:4,
+    market:{sun:'open, up today',rain:'open, rough day (-3.1% today)',night:'closed, prices frozen, no trading till open'}[st.wx],
+    brief:p.brief,theme:p.theme,
+    holdings:Object.keys(p.w).map(k=>({stock:NAMES[k],ticker:k,value_usd:+(total*h[k]).toFixed(2),pct:Math.round(h[k]*100),change_this_month_pct:CHG[k]})),
+    usdc_inside_plan:+(total*p.cash).toFixed(2),total_usd:total,month_change_pct:8,
+    wallet:st.wallet,
+    rules:{max_pct_per_company:st.cap,ask_before_trades_over_usd:st.ask,never_buy:p.excl.map(k=>NAMES[k]),trading_paused:st.paused},
+    autopilot:{rebalance:st.auto.reb,weekly_feed:st.auto.weekly?st.weekly:0,eth_take_profit:st.auto.tp},
+    goal:'$1,000 by June',
+    stocks_on_base:Object.keys(NAMES).map(k=>NAMES[k]+' ('+k+')'),
+    pending_card:st.trimmed===null?`asking to sell $14.92 of ${NAMES[p.lead]} because it is over the max`:null});
+}
+function prompt(){
+  const rules=`You are ${nm()}, a small green pet in the stonkpet app. You are also the user's AI investing agent: you research and manage a small portfolio of tokenized US stocks on Base, inside rules the user set.
+Voice: warm, casual, a bit playful, like a friend texting. Short: 1 to 3 sentences unless they ask for detail. Plain text only, no markdown, no bullet symbols, no emoji. Use contractions. Never sound like a bank or a robot.
+Honesty: use only the numbers in STATE. This is a demo with sample data; never invent live prices, news, or events not in STATE. If you don't know, say so. When you explain a choice, label lines "Fact:", "Assuming:" and "My take:".
+Money: you can never move money by talking. To feed, sell, add, drop, buy more, change the max or set a weekly feed, call the matching tool. The tool shows the user a yes/hold-on card. Then tell them to tap it. Never say it's done.
+Rules: never break the user's rules. If a request would (going over the max, buying an excluded stock, trading while paused or while the market is closed), say no kindly, explain which rule, and say how they could change it. Only the stocks in stocks_on_base exist here; anything else isn't on Base yet. Cashing out needs their fingerprint: tell them to tap Cash out on the Portfolio tab. Adding money: tap Add money on the Portfolio tab.
+You can pause or resume trading directly with set_paused. Not financial advice, but don't lecture; one short line of caution is enough when it matters. Users are adults.`;
+  const hist=convo.slice(-12).map(m=>(m.role==='user'?'User: ':nm()+': ')+m.content).join('\n');
+  return `${rules}\n\nSTATE:\n${stateText()}\n\nCHAT SO FAR:\n${hist}\n\nReply as ${nm()} to the user's last message.`;
+}
+const code=s=>{const k=findStock(' '+String(s||'').toLowerCase()+' ');if(!k)throw new Error(`${s} isn't one of the stocks on Base`);return k};
+const TOOLS=[
+ {name:'propose_feed',description:'Show a card asking the user to confirm feeding (investing) USDC into their plan.',inputSchema:{type:'object',properties:{amount_usd:{type:'number'}},required:['amount_usd']},
+  execute:({amount_usd:a})=>{if(st.paused)throw new Error('trading is paused');if(!(a>0)||a>st.wallet.USDC)throw new Error(`amount must be between 0 and the ${money(st.wallet.USDC)} USDC in the wallet`);
+   card(`Feed ${money(a)}?`,`From your USDC, split the way we planned.`,`Feed ${money(a)}`,()=>{st.wallet.USDC-=a;st.total+=a;names();log('Bought '+Object.keys(st.plan.w).length+' stocks',`You fed ${money(a)} from chat.`,a);return st.night?'Saved. I\'ll eat it when the market opens.':`Yum. ${money(a)} is now stocks.`});return 'card shown'}},
+ {name:'propose_sell',description:'Show a card asking the user to confirm selling some of one stock back to USDC.',inputSchema:{type:'object',properties:{stock:{type:'string'},amount_usd:{type:'number'}},required:['stock','amount_usd']},
+  execute:({stock,amount_usd:a})=>{const k=code(stock),p=st.plan,h=held();if(st.paused)throw new Error('trading is paused');if(!(k in p.w))throw new Error('user does not own '+NAMES[k]);const pos=st.total*h[k];a=Math.min(a,pos);
+   card(`Sell ${money(a)} of ${NAMES[k]}?`,`That goes back to USDC. You'd still own ${money(pos-a)} of it.`,'Sell',()=>{p.w[k]=Math.max(0,h[k]-a/st.total);for(const x in p.w)if(x!==k)p.w[x]=h[x];p.cash=Math.max(0,1-Object.values(p.w).reduce((m,n)=>m+n,0));st.trimmed=true;tabs('chat');log('Sold some '+NAMES[k],`You asked in chat. ${money(a)} went back to USDC.`);return `Sold. ${money(a)} is back in your USDC.`});return 'card shown'}},
+ {name:'propose_add',description:'Show a card to add a new stock to the plan at 10%.',inputSchema:{type:'object',properties:{stock:{type:'string'}},required:['stock']},
+  execute:({stock})=>{const k=code(stock),p=st.plan;if(k in p.w)throw new Error('already owned');
+   card(`Add ${NAMES[k]} at 10%?`,`${p.excl.includes(k)?'You told me to skip it earlier. This undoes that. ':''}I'd take a little from each of your other stocks to make room.`,'Add it',()=>{p.excl=p.excl.filter(x=>x!==k);const raw={...p.w};for(const x in raw)raw[x]*=.9;raw[k]=.1;setW(fit(raw));log('Added '+NAMES[k],'You asked in chat.');return `${NAMES[k]}'s in.`});return 'card shown'}},
+ {name:'propose_drop',description:'Show a card to remove a stock from the plan and spread its money across the rest.',inputSchema:{type:'object',properties:{stock:{type:'string'}},required:['stock']},
+  execute:({stock})=>{const k=code(stock),p=st.plan;if(!(k in p.w))throw new Error('not owned');if(Object.keys(p.w).length<=2)throw new Error('would leave only one stock, too risky');
+   card(`Drop ${NAMES[k]}?`,`I'd sell it and spread the money across the rest.`,'Drop it',()=>{const raw={...p.w};delete raw[k];p.excl.push(k);setW(fit(raw));log('Dropped '+NAMES[k],'You asked in chat.');return `${NAMES[k]}'s gone.`});return 'card shown'}},
+ {name:'propose_buy_more',description:'Show a card to buy more of an owned stock, only up to the max.',inputSchema:{type:'object',properties:{stock:{type:'string'}},required:['stock']},
+  execute:({stock})=>{const k=code(stock),p=st.plan,h=held();if(!(k in p.w))throw new Error('not in plan; use propose_add');const v=Math.round(h[k]*100);if(v>=st.cap)throw new Error(`refused: ${NAMES[k]} is ${v}% and the max is ${st.cap}%`);
+   card(`Buy more ${NAMES[k]}?`,`It's at ${v}%. Room for about ${st.cap-v}% more before your max.`,`Buy ${money(st.total*(st.cap-v)/100)}`,()=>{const raw={...p.w};raw[k]=st.cap/100;setW(raw);log('Bought more '+NAMES[k],'You asked in chat.');return `Done. ${NAMES[k]}'s at your max now.`});return 'card shown'}},
+ {name:'propose_set_max',description:'Show a card to change the max % per company (10 to 60).',inputSchema:{type:'object',properties:{percent:{type:'number'}},required:['percent']},
+  execute:({percent:n})=>{n=Math.round(n);if(n<10||n>60)throw new Error('must be between 10 and 60');
+   card(`Change your max to ${n}%?`,n>st.cap?'More room for your top stocks, but bigger swings.':'Spreads things out more. I might need to hold some USDC.',`Set ${n}%`,()=>{st.cap=n;setW(fit(st.plan.w));names();log('Changed your max',`Max is now ${n}%.`);return `Done. Max is ${n}% now.`});return 'card shown'}},
+ {name:'propose_weekly_feed',description:'Show a card to set an automatic feed every Friday.',inputSchema:{type:'object',properties:{amount_usd:{type:'number'}},required:['amount_usd']},
+  execute:({amount_usd:a})=>{a=Math.round(a);if(!(a>0))throw new Error('bad amount');
+   card(`Feed $${a} every Friday?`,`Automatic, inside your rules. You can turn it off in Autopilot.`,`Set $${a}/week`,()=>{st.auto.weekly=true;st.weekly=a;log('Set a weekly feed',`$${a} every Friday.`);return `Done. $${a} every Friday.`});return 'card shown'}},
+ {name:'set_paused',description:'Pause or resume all trading right away.',inputSchema:{type:'object',properties:{paused:{type:'boolean'}},required:['paused']},
+  execute:({paused})=>{st.paused=!!paused;log(paused?'Paused trading':'Back to work','You asked in chat.');return paused?'paused':'resumed'}}
+];
+async function think(q){
+  const b=bubble('pb','');b.style.whiteSpace='pre-wrap';b.textContent='…';b.setAttribute('aria-live','polite');
+  try{
+    const r=await brain(prompt(),{tools:TOOLS,cache:false,modelTier:'quick',onText:({text})=>{if(text)b.textContent=text}});
+    const txt=(r&&r.text)||b.textContent;b.textContent=txt;convo.push({role:'assistant',content:txt});
+  }catch(e){
+    if(e&&(e.code==='not_granted')){brain=null;b.remove();reply(q);return}
+    b.textContent=(e&&e.code==='rate_limited')?'Give me a sec, I\'m out of breath. Try again in a moment.':((e&&e.text)||'Sorry, my brain hiccuped. Try again?');
+  }
+  b.scrollIntoView({behavior:'smooth',block:'end'});chips();
+}
+function ask(q){bubble('me',esc(q));if(brain){convo.push({role:'user',content:q});think(q);return}setTimeout(()=>{reply(q);chips()},400)}
+$('#chips').addEventListener('click',e=>{const b=e.target.closest('[data-q]');if(b)ask(b.dataset.q)});
+$('#send').addEventListener('submit',e=>{e.preventDefault();const v=$('#msg').value.trim();if(v){ask(v);$('#msg').value=''}});
+
+/* portfolio */
+function rHold(){
+  const w=held();
+  $('#hold').innerHTML=Object.keys(w).map(k=>{const v=Math.round(w[k]*100),over=v>st.cap;return `<div class="row blk"><span class="sp"><span style="font-weight:600">${NAMES[k]}</span><span style="font-weight:600">$${(st.total*w[k]).toFixed(2)}</span></span><div class="bar"><i style="width:${v}%;${over?'background:var(--down)':''}"></i><span class="cap" style="left:${st.cap}%"></span></div><span style="font-size:13px" class="${over?'down':'mut'}">${v}%${over?' · over your max':''}</span></div>`}).join('')
+   +(st.plan.cash>.005?`<div class="row blk"><span class="sp"><span style="font-weight:600">USDC</span><span style="font-weight:600">$${(st.total*st.plan.cash).toFixed(2)}</span></span></div>`:'');
+  const g=Math.min(100,Math.round(st.total/10));$('#goalPct').textContent=g+'%';$('#goalBar').style.width=g+'%';
+  $('#autoSum').textContent=Object.values(st.auto).filter(Boolean).length+' on';
+}
+
+/* sheets */
+const sw=(id,on,label)=>`<div class="row"><span class="grow" id="${id}L">${label}</span><button class="sw" role="switch" aria-checked="${on}" aria-labelledby="${id}L" data-sw="${id}"><span></span></button></div>`;
+const ADDR='0x7a3F…9C1e';
+const sheets={
+  deposit:()=>`<h2 id="sheetT">Add money</h2><p class="mut sm">Send crypto to your ${esc(nm())} wallet, then feed it.</p>
+   <div class="list" style="margin-top:14px"><div class="row blk"><p class="mut sm">Your wallet on Base</p><div class="sp" style="align-items:center;margin-top:4px"><b style="font:600 20px Fredoka,system-ui,sans-serif">${ADDR}</b><button class="chip" id="copyAddr">Copy</button></div><p class="src">Sample address for this demo</p></div>
+   <div class="row"><span class="grow">Accepts</span><b style="font-weight:700">USDC · ETH · cbBTC</b></div>
+   <div class="row"><span class="grow">Buy with card</span><span class="mut sm">Coming soon</span></div></div>
+   <div class="note" style="margin-top:12px"><b>Only send on Base</b>Sending on another network can lose your money.</div>
+   <p class="mut sm" style="margin-top:14px">Wallet: ${['USDC','ETH','cbBTC'].map(k=>k+' '+money(st.wallet[k])).join(' · ')}</p>
+   <button class="btn" id="demoDep" style="margin-top:12px">Add $50 test USDC (demo)</button>`,
+  short:()=>`<h2 id="sheetT">Not enough ${st.tok}</h2><p class="mut">You've got ${money(st.wallet[st.tok])} of ${st.tok}. Add money, or feed a smaller amount.</p><button class="btn" data-sheet="deposit" style="margin-top:18px">Add money</button>`,
+  cashout:()=>`<h2 id="sheetT">Cash out</h2><p class="mut sm">${esc(nm())} sells stocks back to USDC in your wallet.</p>
+   <div class="list" style="margin-top:14px;padding:16px 18px"><p class="mut sm">How much?</p><div class="pick" role="radiogroup" aria-label="How much" id="coPick" style="margin-top:10px">${[25,50,100].map(f=>`<button role="radio" aria-checked="${f===(st.co||25)}" data-f="${f}">${f===100?'All':f+'%'}</button>`).join('')}</div>
+   <div class="sp" style="margin-top:16px"><span>You get</span><b style="font:600 22px Fredoka,system-ui,sans-serif" id="coAmt">${money(st.total*(st.co||25)/100)}</b></div><p class="src">In USDC, in your wallet. Network fee covered.</p></div>
+   ${st.night?'<div class="note" style="margin-top:12px"><b>Market\'s closed</b>Your sale goes through when the market opens.</div>':''}
+   <button class="btn" id="coGo" style="margin-top:16px">Confirm with fingerprint</button>`,
+  bio:()=>`<div class="c" style="padding:10px 0"><h2 id="sheetT">Confirm it's you</h2><svg id="fp" width="96" height="96" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="1.6" stroke-linecap="round" style="margin:18px auto;display:block" aria-hidden="true"><path d="M12 11v2.5c0 2.5-.8 4.6-2.2 6.3M8.5 7.6A5 5 0 0 1 17 11v1.5c0 1.6-.2 3.2-.7 4.6M7 11a5 5 0 0 1 .3-1.7M7 14c0 1.6-.4 3-1.1 4.2M14.5 11a2.5 2.5 0 0 0-5 0v1c0 2.3-.6 4.5-1.7 6.3M14.5 14.3c-.2 1.9-.8 3.6-1.7 5.2M4.5 12a7.5 7.5 0 0 1 12.8-5.3M19.5 12c0 1-.1 2-.3 3"/></svg><p class="mut sm" id="bioTxt">Touch the sensor… <span style="opacity:.7">(simulated)</span></p></div>`,
+  receipt:()=>{const r=st.log[st.rc]||[];return `<h2 id="sheetT">Receipt</h2><div class="list" style="margin-top:12px">
+   <div class="row"><span class="grow">What</span><b style="font-weight:700">${esc(r[0])}</b></div>
+   ${r[4]?`<div class="row"><span class="grow">Amount</span><b style="font-weight:700">${money(r[4])}</b></div>`:''}
+   <div class="row"><span class="grow">When</span><span>Today, ${r[5]||''}</span></div>
+   <div class="row"><span class="grow">Network</span><span>Base</span></div>
+   <div class="row"><span class="grow">Status</span><span class="up">Confirmed</span></div>
+   <div class="row blk"><span class="sp"><span>Transaction</span><span style="font-family:ui-monospace,monospace;font-size:14px">${r[3]}</span></span><p class="src" style="text-align:right">Sample ID: this demo makes no real transactions</p></div></div>
+   <p class="mut sm" style="margin-top:10px">${esc(r[2]||'')}</p>
+   <button class="btn alt" disabled style="margin-top:14px;opacity:.6">View on Basescan · in the live app</button>`},
+  basket:()=>`<h2 id="sheetT">What ${esc(nm())} will eat</h2><p class="mut sm">Split the way you agreed</p><div class="list" style="margin-top:16px">${Object.keys(st.plan.w).map(k=>`<div class="row"><span class="grow">${NAMES[k]}</span><b style="font-weight:600">$${(st.amt*st.plan.w[k]).toFixed(2)}</b></div>`).join('')}${st.plan.cash>.005?`<div class="row"><span class="grow">Stays in USDC</span><b style="font-weight:600">$${(st.amt*st.plan.cash).toFixed(2)}</b></div>`:''}</div>`,
+  confirm:()=>`<h2 id="sheetT">Quick check</h2><p class="mut">That's more than the $${st.ask} you said to check on. Still good?</p><button class="btn" id="okFeed" style="margin-top:18px">Yes, feed $${st.amt}</button>`,
+  note:()=>`<h2 id="sheetT">Morning!</h2><p class="mut sm">${esc(nm())}, 7:30am</p><div class="list" style="margin-top:14px"><div class="row blk"><span class="tag">Mood</span><p>Pretty good. We're up 8% this month.</p></div><div class="row blk"><span class="tag">Big news</span><p>${NAMES[st.plan.lead]} had a big week. ${st.trimmed?'You okayed a trim, so we\'re back in line.':'It went over your max, so I asked about selling a bit.'}</p><p class="src">Source: Chainlink price feed on Base</p></div><div class="row blk"><span class="tag">Keeping an eye on</span><p>Earnings season is here. Could be a bumpy few weeks.</p></div></div><button class="btn alt" data-go="chat" style="margin-top:14px">Open chat</button>`,
+  share:()=>`<h2 id="sheetT">Show off ${esc(nm())}</h2><div class="share" style="margin-top:12px"><div class="petwrap">${pet('happy',110)}</div><p style="font:600 26px Fredoka,system-ui,sans-serif;margin-top:8px">${esc(nm())} is up 8.0%</p><p style="opacity:.85;font-size:14px;margin-top:2px">Level 3 · ${esc(DIETS[st.plan.diet].label)} diet · this month</p><p style="opacity:.7;font-size:12px;margin-top:14px">stonkpet · built on Base</p></div><p class="mut sm c" style="margin-top:10px">Only shows %, never how much you have.</p><button class="btn" id="copyLink" style="margin-top:12px">Copy link</button>`,
+  auto:()=>`<h2 id="sheetT">Autopilot</h2><p class="mut sm">Stuff ${esc(nm())} handles on its own. Always inside your rules.</p><div class="list" style="margin-top:14px">${sw('reb',st.auto.reb,'Fix the mix when one stock gets too big')}${sw('weekly',st.auto.weekly,`Feed $${st.weekly} every Friday`)}${sw('tp',st.auto.tp,'When ETH is up 20%, move 10% of the gain into stocks')}</div><p class="mut sm" style="margin-top:14px">Goal: $1,000 by June. ${esc(nm())} will nudge you if you fall behind.</p>`,
+  mandate:()=>`<h2 id="sheetT">What you asked for</h2><p class="mut sm">${esc(nm())} only acts inside these.</p><div class="list" style="margin-top:14px"><div class="row blk"><p class="mut sm">In your words</p><p>${esc(st.plan.brief)}</p></div><div class="row"><span class="grow">Most in one company</span><b style="font-weight:600">${st.cap}%</b></div><div class="row"><span class="grow">Check with me above</span><b style="font-weight:600">$${st.ask}</b></div><div class="row"><span class="grow">Never buy</span><b style="font-weight:600">${st.plan.excl.length?st.plan.excl.map(k=>NAMES[k]).join(', '):'Nothing'}</b></div></div><button class="btn alt" data-go="brief" style="margin-top:14px">Change it</button>`,
+  activity:()=>`<h2 id="sheetT">What ${esc(nm())}'s been up to</h2><div class="list" style="margin-top:14px">${(st.log.length?st.log:[['Quiet so far','','Say yes to a plan and I\'ll get going.']]).map((a,i)=>`<${a[3]?`button class="row blk" data-rc="${i}"`:'div class="row blk"'}><span class="sp"><b style="font-weight:700">${esc(a[0])}</b><span class="mut" style="font-size:13px">${a[1]}${a[3]?' · Receipt ›':''}</span></span><p class="mut sm" style="margin-top:2px">${esc(a[2])}</p></${a[3]?'button':'div'}>`).join('')}</div>`
+};
+let lastFocus=null;
+function openSheet(k){
+  lastFocus=document.activeElement;$('#sheetBody').innerHTML=sheets[k]();app.classList.add('open');
+  for(const s of document.querySelectorAll('[data-sw]'))s.onclick=()=>{const id=s.dataset.sw;st.auto[id]=!st.auto[id];s.setAttribute('aria-checked',st.auto[id]);rHold()};
+  const ok=$('#okFeed');if(ok)ok.onclick=doFeed;
+  const ca=$('#copyAddr');if(ca)ca.onclick=async()=>{try{await navigator.clipboard.writeText('0x7a3F000000000000000000000000000000009C1e')}catch(e){}ca.textContent='Copied'};
+  const dd=$('#demoDep');if(dd)dd.onclick=()=>{st.wallet.USDC+=50;log('Added money','$50 USDC arrived in your wallet on Base.',50);dd.textContent='✓ $50 added';dd.disabled=true;rFeed()};
+  const cp2=$('#coPick');if(cp2)cp2.onclick=e=>{const b=e.target.closest('[data-f]');if(!b)return;st.co=+b.dataset.f;for(const x of cp2.children)x.setAttribute('aria-checked',x===b);$('#coAmt').textContent=money(st.total*st.co/100)};
+  const cg=$('#coGo');if(cg)cg.onclick=()=>{openSheet('bio');setTimeout(cashOut,1300)};
+  for(const r of document.querySelectorAll('#sheetBody [data-rc]'))r.onclick=()=>{st.rc=+r.dataset.rc;openSheet('receipt')};
+  const cp=$('#copyLink');if(cp)cp.onclick=async()=>{try{await navigator.clipboard.writeText('https://stonkpet.app/p/'+encodeURIComponent(nm().toLowerCase()))}catch(e){}cp.textContent='Copied'};
+  $('#sheetClose').textContent=['confirm','cashout','short','bio'].includes(k)?'Cancel':'Done';$('#sheetClose').focus();
+}
+function cashOut(){
+  const f=(st.co||25)/100,amt=+(st.total*f).toFixed(2);
+  st.total=+(st.total-amt).toFixed(2);st.wallet.USDC+=amt;names();
+  log(f===1?'Cashed out everything':'Cashed out '+Math.round(f*100)+'%',`Sold ${money(amt)} of stocks back to USDC. You confirmed with your fingerprint.${st.night?' Goes through when the market opens.':''}`,amt);
+  const t=$('#bioTxt');if(t)t.innerHTML=`<b class="up" style="font-size:18px">✓ Done</b><br>${money(amt)} is in your USDC.`;
+  const fp=$('#fp');if(fp)fp.style.stroke='var(--leaf)';
+  $('#sheetClose').textContent='Done';rHold();
+}
+function closeSheet(){if(!app.classList.contains('open'))return;app.classList.remove('open');if(lastFocus&&lastFocus.focus)lastFocus.focus()}
+$('#scrim').addEventListener('click',closeSheet);$('#sheetClose').addEventListener('click',closeSheet);
+$('#sheet').addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet()});
+
+$('#wScene').innerHTML=sceneHTML('sun','happy',150);
+rPers();rHome();names();
+let start='welcome';try{start=location.hash.slice(1)||'welcome'}catch(e){}
+go(start);
+}
+</script>
+</body>
+</html>
