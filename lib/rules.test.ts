@@ -156,3 +156,30 @@ describe("other guards", () => {
     expect(refused({ type: "buy", ticker: "AAPL", amountUsd: 5 }, base()).code).toBe("NOT_HELD");
   });
 });
+
+describe("DEX-priced stocks (no Chainlink feed)", () => {
+  const dex = () => with_((s) => {
+    s.listed = new Set([...s.listed, "NFLX"]);
+    s.tradable = new Set([...s.tradable, "NFLX"]);
+    s.feeds.NFLX = "live";
+    s.priceSource = { NFLX: "dex" };
+    s.poolLiquidityUsd = { NFLX: 150_000 };
+    s.holdings.NFLX = 20;
+  });
+  it("always asks before trading them, even under the threshold", () => {
+    const v = check({ type: "sell", ticker: "NFLX", amountUsd: 5 }, dex());
+    expect(v.ok && v.needsApproval).toBe(true);
+    expect(v.ok && v.notes.join(" ")).toMatch(/no official price feed/);
+  });
+  it("refuses a trade bigger than 1% of the pool", () => {
+    const s = dex();
+    s.holdings.NFLX = 5000;
+    const v = refused({ type: "sell", ticker: "NFLX", amountUsd: 2000 }, s);
+    expect(v.code).toBe("TOO_BIG_FOR_POOL");
+    expect(v.reason).toMatch(/under \$1500\.00/);
+  });
+  it("still follows market hours", () => {
+    const s = dex(); s.feeds.NFLX = "closed";
+    expect(refused({ type: "sell", ticker: "NFLX", amountUsd: 5 }, s).code).toBe("MARKET_CLOSED");
+  });
+});

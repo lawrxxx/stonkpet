@@ -1,6 +1,7 @@
 import { createPublicClient, http, parseAbi } from "viem";
 import { base } from "viem/chains";
 import { feedStatus, lastSessionOpen, marketState, type FeedStatus, type MarketState } from "@/lib/market";
+import { dexTradable } from "./dexPrices";
 import { listStocks } from "./stocksApi";
 
 /**
@@ -27,7 +28,13 @@ export type Price = {
   ticker: string;
   name: string;
   address: `0x${string}`;
-  feed: `0x${string}`;
+  /** Chainlink feed address; null for DEX-priced stocks. */
+  feed: `0x${string}` | null;
+  /** "chainlink" = official NAV feed. "dex" = unofficial price from Base DEX pools (see lib/server/dexPrices). */
+  source: "chainlink" | "dex";
+  /** DEX pool depth and activity, for dex-priced stocks. */
+  liquidityUsd?: number;
+  volume24hUsd?: number;
   multiplier: number;
   price: number | null;
   updatedAt: string | null;
@@ -103,7 +110,7 @@ export async function priceBoard(now = new Date()): Promise<PriceBoard> {
       if (!l || l.r[1] <= BigInt(0)) {
         // Onchain read failed: fall back to the API's published NAV, still with staleness rules.
         const upd = s.navUpdatedAt ? Math.floor(Date.parse(s.navUpdatedAt) / 1000) : null;
-        return { ticker: s.ticker, name: s.name, address: s.address, feed: s.navFeed!, multiplier: s.multiplier,
+        return { ticker: s.ticker, name: s.name, address: s.address, feed: s.navFeed!, source: "chainlink", multiplier: s.multiplier,
           price: s.navPrice, updatedAt: s.navUpdatedAt, status: feedStatus(s.navPrice === null ? null : upd, now, market, paused), dayChangePct: null };
       }
       const scale = 10 ** l.dec;
@@ -117,10 +124,20 @@ export async function priceBoard(now = new Date()): Promise<PriceBoard> {
           if (prev !== null) { const p0 = Number(prev) / scale; dayChangePct = ((price - p0) / p0) * 100; }
         }
       } catch { dayChangePct = null; }
-      return { ticker: s.ticker, name: s.name, address: s.address, feed: s.navFeed!, multiplier: s.multiplier,
+      return { ticker: s.ticker, name: s.name, address: s.address, feed: s.navFeed!, source: "chainlink", multiplier: s.multiplier,
         price, updatedAt: new Date(updatedAt * 1000).toISOString(), status: feedStatus(updatedAt, now, market, paused), dayChangePct };
     }),
   );
+
+  // Unofficial tier: deep, active DEX pools for stocks without a feed. Pools trade 24/7, but we
+  // follow US market hours for them too, so the same "closed" rule applies.
+  const dex = await dexTradable(list.stocks);
+  for (const s of dex)
+    prices.push({
+      ticker: s.ticker, name: s.name, address: s.address, feed: null, source: "dex", multiplier: s.multiplier,
+      price: s.dex.price, updatedAt: now.toISOString(), status: market.open ? "live" : "closed", dayChangePct: null,
+      liquidityUsd: s.dex.liquidityUsd, volume24hUsd: s.dex.volume24hUsd,
+    });
 
   return { market, source: list.source, asOf: now.toISOString(), prices };
 }

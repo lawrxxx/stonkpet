@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
 import { cashOf, fit, leadOf, type Weights } from "@/lib/plan";
+import { dexTradable, DEX_RULES, type DexStock } from "./dexPrices";
 import { listStocks, type LiveStock } from "./stocksApi";
 
 /**
@@ -31,7 +32,7 @@ export type ResearchInput = {
   exclusions: string[]; // tickers
 };
 
-export type Flag = { kind: "unavailable" | "cash" | "excluded"; title: string; body: string };
+export type Flag = { kind: "unavailable" | "cash" | "excluded" | "dex"; title: string; body: string };
 export type Fact = { ticker: string; text: string; url: string; title: string };
 export type Proposal = {
   brief: string;
@@ -45,7 +46,9 @@ export type Proposal = {
   assumptions: string[];
   opinions: string[];
   reasons: Record<string, string>;
-  catalog: { source: "live" | "snapshot"; listed: number; tradable: number };
+  /** Where each holding's price comes from: official Chainlink feed, or Base DEX pools. */
+  priceSource: Record<string, "chainlink" | "dex">;
+  catalog: { source: "live" | "snapshot"; listed: number; official: number; dex: number };
   droppedFacts: number;
   model: string;
   createdAt: string;
@@ -56,14 +59,14 @@ export type Proposal = {
 const ParseSchema = z.object({
   theme: z.string().describe("2-4 word label for what they asked for, e.g. 'AI and robots'"),
   picks: z.array(z.object({
-    ticker: z.string().describe("Must be one of the TRADABLE tickers"),
+    ticker: z.string().describe("Must be from one of the two TRADABLE lists"),
     fit: z.number().describe("How well it matches the brief, 1 (loose) to 10 (exactly what they asked for)"),
     reason: z.string().describe("One short sentence in the pet's voice: why it fits"),
   })),
   excluded: z.array(z.string()).describe("Tickers the user said to skip, from either list"),
   unavailable: z.array(z.object({
     asked: z.string().describe("What they asked for that you can't buy, in their words, e.g. 'robots' or 'Netflix'"),
-    listed_tickers: z.array(z.string()).describe("Matching tickers from LISTED WITHOUT A PRICE, if any"),
+    listed_tickers: z.array(z.string()).describe("Matching tickers from LISTED WITHOUT A USABLE PRICE, if any"),
     closest: z.string().nullable().describe("Closest TRADABLE ticker, or null"),
     title: z.string().describe("Short headline in the pet's voice, e.g. 'No robot stocks I can buy yet'"),
     note: z.string().describe("1-2 sentences in the pet's voice: what's missing, why, and the closest alternative if any"),
@@ -71,13 +74,15 @@ const ParseSchema = z.object({
 });
 type Parsed = z.infer<typeof ParseSchema>;
 
-function catalogText(stocks: LiveStock[]) {
-  const tradable = stocks.filter((s) => s.navFeed).map((s) => `${s.ticker}: ${s.name}`).join("\n");
-  const unpriced = stocks.filter((s) => !s.navFeed).map((s) => `${s.ticker}: ${s.name}`).join("\n");
-  return `TRADABLE (on Base, with a live Chainlink price; the only stocks you may pick):\n${tradable}\n\nLISTED WITHOUT A PRICE (on Base, but no price feed, so they can't be bought here):\n${unpriced}`;
+function catalogText(stocks: LiveStock[], dex: DexStock[]) {
+  const dexSet = new Set(dex.map((s) => s.ticker));
+  const official = stocks.filter((s) => s.navFeed).map((s) => `${s.ticker}: ${s.name}`).join("\n");
+  const dexList = dex.map((s) => `${s.ticker}: ${s.name}`).join("\n");
+  const unpriced = stocks.filter((s) => !s.navFeed && !dexSet.has(s.ticker)).map((s) => `${s.ticker}: ${s.name}`).join("\n");
+  return `TRADABLE, OFFICIAL PRICE (on Base, with a Chainlink price feed):\n${official}\n\nTRADABLE, DEX PRICE ONLY (on Base, priced from active exchange pools, no official feed; each trade is capped and needs the user's OK):\n${dexList}\n\nLISTED WITHOUT A USABLE PRICE (on Base, but no feed and no active pool, so they can't be bought here):\n${unpriced}`;
 }
 
-async function parseBrief(client: Anthropic, input: ResearchInput, stocks: LiveStock[]): Promise<Parsed> {
+async function parseBrief(client: Anthropic, input: ResearchInput, stocks: LiveStock[], dex: DexStock[]): Promise<Parsed> {
   const res = await client.beta.messages.parse({
     model: MODEL,
     max_tokens: 8000,
@@ -85,7 +90,7 @@ async function parseBrief(client: Anthropic, input: ResearchInput, stocks: LiveS
     fallbacks: "default",
     output_config: { effort: "low", format: betaZodOutputFormat(ParseSchema) },
     system: [
-      { type: "text", text: `${VOICE}\n\nYou turn a plain-language investing brief into picks from a fixed list of tokenized US stocks on Base.\n\nRules:\n- Pick only from TRADABLE. Never invent tickers.\n- Pick stocks that genuinely match the brief. Fewer, better matches beat padding the list. Usually 3 to 6.\n- If they ask for something that only exists in LISTED WITHOUT A PRICE, or isn't on Base at all, add it to "unavailable" and say so plainly. Suggest the closest TRADABLE stock only if it's honestly close.\n- Respect anything they say to skip.\n\n${catalogText(stocks)}`, cache_control: { type: "ephemeral" } },
+      { type: "text", text: `${VOICE}\n\nYou turn a plain-language investing brief into picks from a fixed list of tokenized US stocks on Base.\n\nRules:\n- Pick only from the two TRADABLE lists. Never invent tickers.\n- Pick stocks that genuinely match the brief. Fewer, better matches beat padding the list. Usually 3 to 6.\n- DEX-price stocks are fine when they're what the user asked for. When two picks fit equally well, prefer the one with an official price.\n- If they ask for something that only exists in LISTED WITHOUT A USABLE PRICE, or isn't on Base at all, add it to "unavailable" and say so plainly. Suggest the closest TRADABLE stock only if it's honestly close.\n- Respect anything they say to skip.\n\n${catalogText(stocks, dex)}`, cache_control: { type: "ephemeral" } },
     ],
     messages: [{
       role: "user",
@@ -178,9 +183,12 @@ export async function runResearch(input: ResearchInput): Promise<Proposal> {
   const client = new Anthropic();
   const catalog = await listStocks();
   const byTicker = new Map(catalog.stocks.map((s) => [s.ticker, s]));
-  const tradable = new Set(catalog.stocks.filter((s) => s.navFeed).map((s) => s.ticker));
+  const official = new Set(catalog.stocks.filter((s) => s.navFeed).map((s) => s.ticker));
+  const dex = await dexTradable(catalog.stocks);
+  const dexSet = new Set(dex.map((s) => s.ticker));
+  const tradable = new Set([...official, ...dexSet]);
 
-  const parsed = await parseBrief(client, input, catalog.stocks);
+  const parsed = await parseBrief(client, input, catalog.stocks, dex);
 
   // Validate everything the model returned against the real catalog.
   const excluded = [...new Set([...input.exclusions, ...parsed.excluded].map((t) => t.toUpperCase()).filter((t) => byTicker.has(t)))];
@@ -202,6 +210,16 @@ export async function runResearch(input: ResearchInput): Promise<Proposal> {
 
   const flags: Flag[] = [];
   for (const u of parsed.unavailable) flags.push({ kind: "unavailable", title: u.title, body: u.note });
+  const dexPicks = Object.keys(weights).filter((t) => dexSet.has(t));
+  if (dexPicks.length) {
+    const names = dexPicks.map(name);
+    const list = names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}` : names[0];
+    flags.push({
+      kind: "dex",
+      title: `${list} ${dexPicks.length > 1 ? "have" : "has"} no official price`,
+      body: `${dexPicks.length > 1 ? "They trade" : "It trades"} on Base exchanges, so I price ${dexPicks.length > 1 ? "them" : "it"} from those pools instead of a Chainlink feed. I'll ask before every trade, and keep each one under ${Math.round(DEX_RULES.maxTradeShareOfPool * 100)}% of the pool so the price doesn't slip.`,
+    });
+  }
   if (cash > 0.005)
     flags.push({
       kind: "cash",
@@ -226,7 +244,8 @@ export async function runResearch(input: ResearchInput): Promise<Proposal> {
     assumptions: (submitted.assumptions ?? []).slice(0, 4),
     opinions: (submitted.opinions ?? []).slice(0, 4),
     reasons,
-    catalog: { source: catalog.source, listed: catalog.stocks.length, tradable: tradable.size },
+    priceSource: Object.fromEntries(Object.keys(weights).map((t) => [t, dexSet.has(t) ? "dex" : "chainlink"])),
+    catalog: { source: catalog.source, listed: catalog.stocks.length, official: official.size, dex: dexSet.size },
     droppedFacts,
     model: MODEL,
     createdAt: new Date().toISOString(),

@@ -7,7 +7,7 @@
  */
 import { held, money, nm, CHG, type Card, type SheetKey, type Store } from "./store";
 import { clock, opensWhen, pct, planDayChange, priceOf } from "./prices";
-import { ABOUT, findListedOnly, findNotListed, findStock, nameOf, ROBOT_TICKERS, TRADABLE_COUNT } from "./stocks";
+import { ABOUT, findListedOnly, findNotListed, findStock, nameOf, ROBOT_TICKERS } from "./stocks";
 
 export const esc = (s: unknown) =>
   String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
@@ -58,8 +58,14 @@ export function reply(text: string, s: Store): Reply {
   }
   if (/robot/.test(t))
     return { html: `Robot stocks like ${ROBOT_TICKERS.slice(0, 2).map(NAMES).join(" and ")} are listed on Base, but none has a live price yet, so I won't buy them. Tesla is building robots, if you want something close. I'll ping you the day one gets a price.`, tag: "Not yet" };
-  if (/(add|include|want some|get me|buy)/.test(t) && listedOnly && !k)
-    return { html: `${NAMES(listedOnly)} is listed on Base, but there's no live price for it yet, so I can't check it against your rules. Only ${TRADABLE_COUNT} stocks have one right now. I'll let you know when it does.`, tag: "Not available" };
+  if (/(add|include|want some|get me|buy)/.test(t) && listedOnly && !k) {
+    const q = priceOf(s.board, listedOnly);
+    if (q?.source === "dex" && q.price !== null) {
+      if (listedOnly in p.w) return { html: `You already own ${NAMES(listedOnly)}.` };
+      return { html: "", card: { title: `Add ${NAMES(listedOnly)} at 10%?`, body: `It has no official price feed, but it trades on Base exchanges at about $${q.price.toFixed(2)}. I'll keep each trade small next to its pool. I'd take a little from your other stocks to make room.`, yes: "Add it", action: { type: "add", ticker: listedOnly } } };
+    }
+    return { html: `${NAMES(listedOnly)} is listed on Base, but it has no price feed and no active exchange pool right now, so I can't price it or check it against your rules. I'll let you know when that changes.`, tag: "Not available" };
+  }
   if (/(add|include|want some|get me|buy)/.test(t) && miss && !k)
     return { html: `${cap1(miss)} isn't on Base yet, so I can't buy it. I'll let you know if it gets listed.`, tag: "Not available" };
   if (/(add|include|want some|get me|buy)/.test(t) && k) {

@@ -24,8 +24,9 @@ function PriceTag({ ticker }: { ticker: string }) {
   if (!p || p.price === null) return <span className="muted">no live price</span>;
   const d = p.dayChangePct;
   return (
-    <span className="muted num" title={p.updatedAt ? `Chainlink, updated ${clock(p.updatedAt)}` : undefined}>
+    <span className="muted num" title={p.source === "dex" ? "Unofficial price from Base exchange pools" : p.updatedAt ? `Chainlink, updated ${clock(p.updatedAt)}` : undefined}>
       ${p.price.toFixed(2)}{d !== null && <> · <span className={d < 0 ? "down" : "up"}>{pct(d)}</span></>}
+      {p.source === "dex" && " · DEX price"}
       {p.status === "stale" && " · frozen"}
     </span>
   );

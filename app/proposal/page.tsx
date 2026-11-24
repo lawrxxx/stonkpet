@@ -19,7 +19,7 @@ function notesFor(p: Plan, cap: number): Note[] {
   const out: Note[] = [{ title: "Basic plan, no research", body: "I couldn't do live research just now, so this plan comes from simple keyword matching and has no sources yet." }];
   if (p.robot) out.push({
     title: "No robot stocks I can buy yet",
-    body: `Robot makers like ${ROBOT_TICKERS.slice(0, 2).map(nameOf).join(" and ")} are listed on Base, but none has a live price yet, so I can't check them against your rules. Only ${TRADABLE_COUNT} of the ${LISTED_COUNT} stocks on Base do.`,
+    body: `Robot makers like ${ROBOT_TICKERS.slice(0, 2).map(nameOf).join(" and ")} are listed on Base, but none has a usable price yet, so I can't check them against your rules. ${TRADABLE_COUNT} of the ${LISTED_COUNT} stocks on Base have an official price feed, and a few more trade in active pools.`,
   });
   if (p.cash > 0.005) out.push({ title: `${Math.round(p.cash * 100)}% stays in USDC for now`, body: `Only ${n} stocks match what you asked for, and none can go over ${cap}%. I'd rather hold cash than break your rule.` });
   return out;
@@ -72,7 +72,10 @@ export default function Proposal() {
       <div className="list mt-4">
         {Object.keys(p.w).sort((a, b) => p.w[b] - p.w[a]).map((k) => (
           <div className="row blk" key={k}>
-            <div className="between strong"><span>{nameOf(k)}</span><span className="num">{Math.round(p.w[k] * 100)}%</span></div>
+            <div className="between strong">
+              <span className="row-x gap-2">{nameOf(k)}{r?.priceSource?.[k] === "dex" && <span className="tag tag-muted">DEX price</span>}</span>
+              <span className="num">{Math.round(p.w[k] * 100)}%</span>
+            </div>
             <div className="bar"><i style={{ width: p.w[k] * 100 + "%" }} /></div>
             {r?.reasons[k] && <p className="t-small muted mt-2">{r.reasons[k]}</p>}
           </div>

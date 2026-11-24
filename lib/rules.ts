@@ -42,12 +42,19 @@ export type Snapshot = {
   tradable: ReadonlySet<string>;
   /** Display names for messages. */
   names?: Record<string, string>;
+  /** Where each tradable stock's price comes from. Missing = "chainlink". */
+  priceSource?: Record<string, "chainlink" | "dex">;
+  /** DEX pool liquidity in USD, for dex-priced stocks. */
+  poolLiquidityUsd?: Record<string, number>;
 };
+
+/** A single trade in a DEX-priced stock may be at most this share of its pool. */
+export const MAX_POOL_SHARE = 0.01;
 
 export type Code =
   | "INVALID_AMOUNT" | "NOT_LISTED" | "NO_PRICE_FEED" | "EXCLUDED" | "PAUSED"
   | "MARKET_CLOSED" | "PRICE_FROZEN" | "OVER_MAX" | "INSUFFICIENT_FUNDS" | "BALANCE_UNKNOWN"
-  | "NOT_HELD" | "NOT_ENOUGH_HELD" | "ALREADY_HELD" | "TOO_CONCENTRATED" | "OUT_OF_RANGE";
+  | "NOT_HELD" | "NOT_ENOUGH_HELD" | "ALREADY_HELD" | "TOO_CONCENTRATED" | "OUT_OF_RANGE" | "TOO_BIG_FOR_POOL";
 
 export type Verdict =
   | {
@@ -167,12 +174,27 @@ export function check(a: Action, s: Snapshot): Verdict {
       break;
   }
 
+  // DEX-priced stocks: keep each trade small next to the pool, and always ask.
+  const dexTouched = touched.filter((t) => s.priceSource?.[t] === "dex");
+  for (const t of dexTouched) {
+    const size =
+      a.type === "feed" ? a.amountUsd * (s.weights[t] ?? 0)
+      : a.type === "buy" || a.type === "sell" ? a.amountUsd
+      : a.type === "add" ? (a.pct / 100) * total
+      : a.type === "drop" ? s.holdings[t] ?? 0
+      : 0;
+    const pool = s.poolLiquidityUsd?.[t] ?? 0;
+    if (size > pool * MAX_POOL_SHARE + EPS)
+      return refuse("TOO_BIG_FOR_POOL", `${name(t)} only trades in a small pool on Base (about ${usd(pool)}), so I keep each trade under ${usd(pool * MAX_POOL_SHARE)} to avoid a bad price.`);
+  }
+  if (dexTouched.length) notes.push(`${dexTouched.map(name).join(", ")} ${dexTouched.length > 1 ? "have" : "has"} no official price feed, so I'll check with you first.`);
+
   // Money above the user's threshold always needs an explicit yes. Sells and drops move money too.
   const amount =
     "amountUsd" in a ? a.amountUsd
     : a.type === "add" ? (a.pct / 100) * total
     : a.type === "drop" ? s.holdings[a.ticker] ?? 0
     : 0;
-  const needsApproval = amount > r.askAboveUsd + EPS || a.type === "add" || a.type === "drop";
+  const needsApproval = amount > r.askAboveUsd + EPS || a.type === "add" || a.type === "drop" || dexTouched.length > 0;
   return { ok: true, needsApproval, queueUntilOpen, notes };
 }
