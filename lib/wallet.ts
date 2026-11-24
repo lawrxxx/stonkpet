@@ -57,6 +57,13 @@ export function useBalances(address?: `0x${string}`): Balances {
 
 export type Call = { to: `0x${string}`; data?: Hex; value?: bigint };
 
+let pmCheck: Promise<boolean> | null = null;
+/** Asks our server once whether CDP_PAYMASTER_URL is set. */
+export function paymasterReady(): Promise<boolean> {
+  pmCheck ??= fetch("/api/paymaster").then((r) => r.json()).then((j) => !!j.paymasterConfigured).catch(() => false);
+  return pmCheck;
+}
+
 /**
  * Every transaction the app sends goes through here: gas sponsored by the CDP
  * Paymaster (via our /api/paymaster proxy) and tagged with our Builder Code.
@@ -66,9 +73,9 @@ export function useSponsoredCalls() {
   const status = useWaitForCallsStatus({ id: send.data?.id, query: { enabled: !!send.data?.id } });
   const sendCalls = useCallback(
     async (calls: Call[]) => {
-      const capabilities: Record<string, unknown> = {
-        paymasterService: { url: `${window.location.origin}/api/paymaster` },
-      };
+      // Sponsor gas when the server has a paymaster; otherwise the user's wallet pays (testnet ETH from the faucet).
+      const capabilities: Record<string, unknown> = {};
+      if (await paymasterReady()) capabilities.paymasterService = { url: `${window.location.origin}/api/paymaster` };
       if (DATA_SUFFIX) capabilities.dataSuffix = { value: DATA_SUFFIX, optional: true };
       return send.mutateAsync({ calls, chainId: CHAIN.id, capabilities });
     },

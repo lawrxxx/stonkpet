@@ -40,10 +40,10 @@ export default function Check() {
       {!w.connected ? (
         <button className="btn" style={{ marginTop: 16 }} disabled={w.connecting} onClick={() => w.signIn().catch(() => {})}>{w.connecting ? "Waiting for passkey…" : "Sign in with passkey"}</button>
       ) : (<>
-        <p className="mut sm" style={{ marginTop: 16 }}>Sends a gas-free 0 USDC transfer to yourself, tagged with the Builder Code. Your wallet needs no ETH.</p>
+        <p className="mut sm" style={{ marginTop: 16 }}>{health?.paymasterConfigured ? "Sends a gas-free 0 USDC transfer to yourself, tagged with the Builder Code. Your wallet needs no ETH." : "No paymaster yet, so your wallet pays the gas. Grab a little test ETH from the faucet first."}</p>
         <button className="btn" style={{ marginTop: 10 }} disabled={tx.pending}
           onClick={() => tx.sendCalls([{ to: TOKENS.USDC.address, data: encodeFunctionData({ abi: erc20Abi, functionName: "transfer", args: [w.address!, BigInt(0)] }) }]).catch(() => {})}>
-          {tx.pending ? "Sending…" : "Send gas-free test transaction"}
+          {tx.pending ? "Sending…" : health?.paymasterConfigured ? "Send gas-free test transaction" : "Send test transaction"}
         </button>
         {tx.txHash && <p className="up sm" style={{ marginTop: 10 }}>✓ Confirmed · <a href={txUrl(tx.txHash)} target="_blank" rel="noreferrer">view on Basescan</a></p>}
         {tx.error && <p className="down sm" role="alert" style={{ marginTop: 10, wordBreak: "break-word" }}>{tx.error.message.split("\n")[0]}</p>}
