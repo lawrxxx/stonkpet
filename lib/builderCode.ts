@@ -6,7 +6,9 @@ import { Attribution } from "ox/erc8021";
  * wagmi ignores a global dataSuffix for connected wallets, so it is passed per call
  * (see lib/wallet.ts).
  */
-export const BUILDER_CODE = (process.env.NEXT_PUBLIC_BUILDER_CODE || "").trim();
+/** stonkpet's code from dashboard.base.org. Public by design; NEXT_PUBLIC_BUILDER_CODE can override it. */
+export const DEFAULT_BUILDER_CODE = "bc_h8bwov26";
+export const BUILDER_CODE = (process.env.NEXT_PUBLIC_BUILDER_CODE || DEFAULT_BUILDER_CODE).trim();
 export const HAS_BUILDER_CODE = /^bc_[a-z0-9]+$/i.test(BUILDER_CODE);
 export const DATA_SUFFIX = HAS_BUILDER_CODE ? Attribution.toDataSuffix({ codes: [BUILDER_CODE] }) : undefined;
 

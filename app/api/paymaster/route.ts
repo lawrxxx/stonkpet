@@ -1,3 +1,4 @@
+import { BUILDER_CODE } from "@/lib/builderCode";
 import { CHAIN } from "@/lib/chain";
 
 /**
@@ -15,7 +16,7 @@ export async function GET() {
   return Response.json({
     chainId: CHAIN.id,
     paymasterConfigured: !!process.env.CDP_PAYMASTER_URL,
-    builderCode: process.env.NEXT_PUBLIC_BUILDER_CODE || null,
+    builderCode: BUILDER_CODE || null,
   });
 }
 
