@@ -6,7 +6,7 @@
  * through esc(); everything else is our own constant copy.
  */
 import { held, money, nm, CHG, type Card, type SheetKey, type Store } from "./store";
-import { clock, opensWhen, pct, priceOf } from "./prices";
+import { clock, opensWhen, pct, planDayChange, priceOf } from "./prices";
 import { ABOUT, findListedOnly, findNotListed, findStock, nameOf, ROBOT_TICKERS, TRADABLE_COUNT } from "./stocks";
 
 export const esc = (s: unknown) =>
@@ -22,12 +22,13 @@ export function reply(text: string, s: Store): Reply {
     .replace(/ u /g, " you ").replace(/ ur /g, " your ").replace(/ r /g, " are ").replace(/ hw /g, " how ")
     .replace(/ wat | wht /g, " what ").replace(/ pls | plz /g, " please ").replace(/\s+/g, " ");
   const p = s.plan!, h = held(s), k = findStock(t), total = s.total, inv = Object.keys(p.w);
+  const today = planDayChange(s.board, p.w);
   const listedOnly = findListedOnly(t), miss = findNotListed(t);
   const n = (t.match(/(\d+(?:\.\d+)?)/) || [])[1], num = n ? +n : null, lead = nameOf(p.lead);
   const NAMES = nameOf;
 
   if (/\bhelp\b(?! me)|what can you|options|menu/.test(t))
-    return { html: `Loads. Just ask in normal words:<br>• "How am I doing?" or "any news?"<br>• "Feed $10" or "sell $5 of Meta"<br>• "Add Apple" or "drop Meta"<br>• "Change my max to 35%"<br>• "Pause trading"<br>• "What if the market crashes?"<br>• "Help me hit my goal"<br>Anything that moves money, I'll check with you first.` };
+    return { html: `Just ask in normal words:<br>• "How am I doing?" or "any news?"<br>• "Feed $10" or "sell $5 of Meta"<br>• "Add Apple" or "drop Meta"<br>• "Change my max to 35%"<br>• "Pause trading"<br>• "What if the market crashes?"<br>• "Help me hit my goal"<br>Anything that moves money, I'll check with you first.` };
   if (/\b(resume|unpause|start trading|wake up)\b/.test(t)) { s.set({ paused: false }); s.addLog("Back to work", "You said resume."); return { html: `I'm back on it. I'll follow your rules like before.` }; }
   if (/\b(pause|stop trading|freeze|stop buying)\b/.test(t)) { s.set({ paused: true }); s.addLog("Paused trading", "You asked me to stop for now."); return { html: `Paused. I won't buy or sell anything until you say "resume". Your stocks stay right where they are.` }; }
   if (/(max|limit|cap)/.test(t) && num) {
@@ -102,14 +103,14 @@ export function reply(text: string, s: Store): Reply {
   if (/(usdc|cash|wallet|spare|available)/.test(t))
     return { html: `You have ${money(s.wallet.USDC)} of USDC in your wallet, ready to feed me.${p.cash > 0.005 ? ` Another ${money(total * p.cash)} is parked inside your plan because of your max.` : ""}` };
   if (/(how much|balance|worth|total|my money|portfolio|plate|stash|what do i (have|own)|what'?s in|holdings|what am i holding|net worth|value)/.test(t))
-    return { html: `You've got <b>${money(total)}</b> in total, up 8% this month.<br>` + [...inv].sort((a, b) => h[b] - h[a]).map((x) => `• ${NAMES(x)}: ${money(total * h[x])}`).join("<br>") + (p.cash > 0.005 ? `<br>• USDC: ${money(total * p.cash)}` : "") + `<br><br>Plus ${money(s.wallet.USDC)} of USDC in your wallet, ready to feed me.` };
+    return { html: `You've got <b>${money(total)}</b> in total${today !== null ? `, ${pct(today)} today` : ""}.<br>` + [...inv].sort((a, b) => h[b] - h[a]).map((x) => `• ${NAMES(x)}: ${money(total * h[x])}`).join("<br>") + (p.cash > 0.005 ? `<br>• USDC: ${money(total * p.cash)}` : "") + `<br><br>Plus ${money(s.wallet.USDC)} of USDC in your wallet, ready to feed me.` };
   if (/(my rules|rules|settings|my max|my limit)/.test(t))
     return { html: `Your rules:<br>• Nothing over ${s.cap}% in one company<br>• I check with you above $${s.ask}<br>• Never buy: ${p.excl.length ? p.excl.map(NAMES).join(", ") : "nothing set"}<br>• Trading: ${s.paused ? "paused" : "on"}<br><br>Want to change one? Just tell me, like "change my max to 35%".` };
   if (/(plan|diet|strategy|invested in|what are you buying|theme)/.test(t))
     return { html: `You asked for "${esc(p.brief.replace(/[.!\s]+$/, ""))}", so I eat ${inv.map(NAMES).join(", ")}, with ${NAMES(p.lead)} getting the biggest bite.` };
   if (/(level|streak|grow|xp)/.test(t)) return { html: `I'm level 3. You've fed me 4 weeks in a row. Two more weeks and I grow another leaf.` };
   if (/(how are you|you ok|you good|feeling|mood)/.test(t))
-    return { html: s.wx === "rain" ? `Bit gloomy, honestly. Rough day in the market. But we're still up for the month, so I'm not panicking.` : s.wx === "night" ? `Sleepy. Market's closed. Ask me anything though.` : `Pretty great! The sun's out and we're up 8% this month.` };
+    return { html: s.wx === "rain" ? `Bit gloomy, honestly. Rough day in the market${today !== null ? ` (${pct(today)})` : ""}. I'm not panicking.` : s.wx === "night" ? `Sleepy. Market's closed. Ask me anything though.` : `Pretty good. The sun's out.` };
   if (/(who are you|your name|what are you)/.test(t)) return { html: `I'm ${esc(nm(s))}, your pet. I research stocks, buy what fits your plan, and always ask before anything big.` };
   if (/(price|how much is|cost of)/.test(t) && k) {
     const q = priceOf(s.board, k);
@@ -119,7 +120,7 @@ export function reply(text: string, s: Store): Reply {
     return { html: `One ${NAMES(k)} token is $${q.price.toFixed(2)}${q.dayChangePct !== null ? `, ${pct(q.dayChangePct)} today` : ""}.${note}${src(`Chainlink price feed on Base, ${when}`)}`, tag: "Fact" };
   }
   if (/(how am i|how are we|doing|performance|up or down|status|how'?s it going|gains|profit|made any money|make money|made money|making money|earn|returns|winning|losing)/.test(t))
-    return { html: `We're up 8% this month. You're a quarter of the way to $1,000.${s.paused ? " Trading is paused, by the way." : ""}` };
+    return { html: `${today !== null ? `Your stocks are ${pct(today)} ${s.board && !s.board.market.open ? "last session" : "today"}. ` : ""}You're ${Math.round(total / 10)}% of the way to $1,000.${s.paused ? " Trading is paused, by the way." : ""}` };
   if (/(news|happening|today|update|morning)/.test(t)) {
     const moved = (s.board?.prices ?? []).filter((x) => x.dayChangePct !== null).sort((a, b) => Math.abs(b.dayChangePct!) - Math.abs(a.dayChangePct!));
     if (!moved.length) return { html: `I can't reach live prices right now, so no update from me. I'd rather say nothing than guess.`, tag: "Today" };

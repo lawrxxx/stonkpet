@@ -1,4 +1,5 @@
 "use client";
+import { Icon } from "@/components/Icon";
 import { Top } from "@/components/Top";
 import { useGo } from "@/components/nav";
 import { DIETS, type DietKey } from "@/lib/plan";
@@ -8,23 +9,23 @@ export default function Brief() {
   const s = useStore();
   const go = useGo();
   return (
-    <section className="scr on" aria-label="Your brief">
+    <section className="scr" aria-label="Your brief">
       <Top back="pers" step={3} />
-      <h1 style={{ marginTop: 32 }}>What&apos;s {nm(s)} into?</h1>
-      <p className="mut" style={{ marginTop: 8 }}>Tap a diet, or just type it out.</p>
-      <div className="hscroll" style={{ marginTop: 20, paddingBottom: 4 }} role="group" aria-label="Diets">
+      <h1 className="t-title mt-8">What&apos;s {nm(s)} into?</h1>
+      <p className="muted mt-2">Pick a diet, or just type it out.</p>
+      <div className="hscroll mt-5" role="group" aria-label="Diets">
         {(Object.keys(DIETS) as DietKey[]).map((k) => (
           <button key={k} className="chip" aria-pressed={s.diet === k} onClick={() => s.set({ diet: k, brief: DIETS[k].text, skipCrypto: false, plan: null })}>{DIETS[k].label}</button>
         ))}
         <button className="chip" aria-pressed={s.skipCrypto}
           onClick={() => !s.skipCrypto && s.set({ skipCrypto: true, brief: s.brief.trim().replace(/\.?$/, ". ") + "Skip crypto companies.", plan: null })}>
-          + Skip crypto companies
+          {!s.skipCrypto && <Icon name="plus" size={16} />}Skip crypto companies
         </button>
       </div>
-      <label htmlFor="briefTxt" className="sm" style={{ marginTop: 18, fontWeight: 600 }}>In your words</label>
-      <textarea id="briefTxt" style={{ marginTop: 8 }} value={s.brief} onChange={(e) => s.set({ brief: e.target.value, plan: null })} />
+      <label htmlFor="briefTxt" className="t-small strong mt-5">In your words</label>
+      <textarea id="briefTxt" className="mt-2" value={s.brief} onChange={(e) => s.set({ brief: e.target.value, plan: null })} />
       <div className="grow" />
-      <button className="btn" style={{ marginTop: 20 }} onClick={() => go("rules")}>Continue</button>
+      <button className="btn mt-5" onClick={() => go("rules")}>Continue</button>
     </section>
   );
 }

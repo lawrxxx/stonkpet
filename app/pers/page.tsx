@@ -7,11 +7,11 @@ export default function Personality() {
   const s = useStore();
   const go = useGo();
   return (
-    <section className="scr on" aria-label="Personality">
+    <section className="scr" aria-label="Personality">
       <Top back="name" step={2} />
-      <h1 style={{ marginTop: 32 }}>How bold is {nm(s)}?</h1>
-      <p className="mut" style={{ marginTop: 8 }}>This sets how risky it plays. You can change it anytime.</p>
-      <div role="radiogroup" aria-label="Personality" style={{ marginTop: 28, display: "flex", flexDirection: "column", gap: 12 }}>
+      <h1 className="t-title mt-8">How bold is {nm(s)}?</h1>
+      <p className="muted mt-2">This sets how risky it plays. You can change it anytime.</p>
+      <div role="radiogroup" aria-label="Personality" className="stack gap-3 mt-6">
         {PERS.map(([k, t, d, cap, ask]) => (
           <button key={k} className="opt" role="radio" aria-checked={k === s.pers} onClick={() => s.set({ pers: k, cap, ask, plan: null })}>
             <span><span className="t">{t}</span><span className="d">{d}</span></span>
@@ -20,7 +20,7 @@ export default function Personality() {
         ))}
       </div>
       <div className="grow" />
-      <button className="btn" onClick={() => go("brief")}>Continue</button>
+      <button className="btn mt-6" onClick={() => go("brief")}>Continue</button>
     </section>
   );
 }

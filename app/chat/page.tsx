@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { Icon } from "@/components/Icon";
 import { chipPool, esc, reply } from "@/lib/mockBrain";
 import { nm, useStore, type Msg } from "@/lib/store";
 
@@ -9,16 +10,19 @@ function Bubble({ m }: { m: Msg }) {
   if (m.card) {
     const c = m.card;
     return (
-      <div className="bub pb" style={{ maxWidth: "92%", padding: 18 }}>
-        <p style={{ font: "600 18px Fredoka,system-ui,sans-serif" }}>{c.title}</p>
-        <p className="mut sm" style={{ marginTop: 4 }}>{c.body}</p>
+      <div className="bub pb card-bub">
+        <p className="num t-heading" style={{ fontSize: 18 }}>{c.title}</p>
+        <p className="t-small muted mt-1">{c.body}</p>
         {c.status === "pending" ? (
-          <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
-            <button className="btn s" onClick={() => answer(m.id, true)}>{c.yes}</button>
-            <button className="btn s alt" style={{ background: "var(--bg)" }} onClick={() => answer(m.id, false)}>Hold on</button>
+          <div className="grid-2 mt-4">
+            <button className="btn sm" onClick={() => answer(m.id, true)}>{c.yes}</button>
+            <button className="btn sm secondary" onClick={() => answer(m.id, false)}>Hold on</button>
           </div>
         ) : (
-          <p className={c.status === "yes" ? "up" : "mut"} style={{ marginTop: 12, fontSize: 14 }}>{c.status === "yes" ? "✓ You said yes" : "You said hold on"}</p>
+          <p className={"t-small row-x gap-1 mt-3 " + (c.status === "yes" ? "up" : "muted")}>
+            {c.status === "yes" && <Icon name="check" size={16} stroke={2.6} />}
+            {c.status === "yes" ? "You said yes" : "You said hold on"}
+          </p>
         )}
       </div>
     );
@@ -48,8 +52,7 @@ export default function Chat() {
   useEffect(() => { end.current?.scrollIntoView({ behavior: "smooth", block: "end" }); }, [s.msgs.length]);
 
   const ask = (q: string) => {
-    const st = useStore.getState();
-    st.push({ from: "me", html: esc(q) });
+    useStore.getState().push({ from: "me", html: esc(q) });
     setTimeout(() => {
       const r = reply(q, useStore.getState());
       const now = useStore.getState();
@@ -62,19 +65,18 @@ export default function Chat() {
   };
 
   return (
-    <section className="scr on" aria-label="Chat">
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, flex: 1, paddingTop: 8 }} aria-live="polite">
+    <section className="scr" aria-label="Chat">
+      <div className="thread" aria-live="polite">
         {s.msgs.map((m) => <Bubble key={m.id} m={m} />)}
         <div ref={end} style={{ scrollMarginBottom: 150 }} />
       </div>
       <div className="composer">
-        <div className="hscroll" style={{ paddingTop: 2, paddingBottom: 10 }} role="group" aria-label="Suggestions">
+        <div className="hscroll" role="group" aria-label="Suggestions">
           {chips.map((q) => <button key={q} className="chip" onClick={() => ask(q)}>{q}</button>)}
         </div>
-        <form style={{ display: "flex", gap: 8 }} onSubmit={(e) => { e.preventDefault(); const v = text.trim(); if (v) { ask(v); setText(""); } }}>
-          <input aria-label={`Message ${nm(s)}`} placeholder={`Ask ${nm(s)} anything`} autoComplete="off" value={text} onChange={(e) => setText(e.target.value)}
-            style={{ height: 52, border: 0, borderRadius: 26, background: "var(--card)", font: "700 16px Nunito,system-ui,sans-serif", textAlign: "left", padding: "0 20px", boxShadow: "0 3px 0 var(--line)" }} />
-          <button className="btn" aria-label="Send" style={{ width: 52, height: 52, borderRadius: 26, flex: "none", fontSize: 22 }}>↑</button>
+        <form className="row-x gap-2 mt-3" onSubmit={(e) => { e.preventDefault(); const v = text.trim(); if (v) { ask(v); setText(""); } }}>
+          <input className="field" aria-label={`Message ${nm(s)}`} placeholder={`Ask ${nm(s)} anything`} autoComplete="off" value={text} onChange={(e) => setText(e.target.value)} />
+          <button className="btn send" aria-label="Send"><Icon name="send" size={22} stroke={2.4} /></button>
         </form>
       </div>
     </section>
