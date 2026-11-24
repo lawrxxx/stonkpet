@@ -13,7 +13,7 @@ Built for Base's **Stocks Maxxing** hackathon. Track: Agentic Stock Finance → 
 | Milestone | State |
 |---|---|
 | 1. Scaffold + design port (all screens, mock data) | ✅ done |
-| 2. Wallet: passkey sign-in, paymaster, balances on Base Sepolia | next |
+| 2. Wallet: passkey sign-in, paymaster, balances on Base Sepolia | 🟡 code done, needs CDP Paymaster URL + Builder Code to verify |
 | 3. Research + proposal with Claude, rules engine + tests | |
 | 4. Execution onchain, receipts, Builder Codes | |
 | 5. Chat with tools, approval cards, refusals | |
@@ -37,6 +37,12 @@ Refresh the stock list snapshot from the public Base Tokenized Stocks API:
 node scripts/snapshot-stocks.mjs
 ```
 
+## Wallet setup (milestone 2)
+
+1. **CDP Paymaster** at portal.cdp.coinbase.com → Paymaster → Base Sepolia. Copy the endpoint into `CDP_PAYMASTER_URL` (server-only, never `NEXT_PUBLIC_`). In the allowlist, add the Base Sepolia USDC contract `0x036CbD53842c5426634e7929541eC2318f3dCF7e` (`transfer`). Later milestones add the stock-token and swap contracts.
+2. **Builder Code** at dashboard.base.org. Put `bc_…` in `NEXT_PUBLIC_BUILDER_CODE`.
+3. Redeploy, open `/check`, sign in with a passkey and tap **Send gas-free test transaction**. The receipt links to Basescan; check attribution on the Builder Codes dashboard.
+
 ## Architecture (so far)
 
 - **Next.js App Router + TypeScript.** One route per screen (`/`, `/name`, `/pers`, `/brief`, `/rules`, `/think`, `/proposal`, `/home`, `/feed`, `/chat`, `/portfolio`) inside a shared phone shell (`components/Shell.tsx`) that holds the tab bar and bottom sheets.
@@ -44,6 +50,8 @@ node scripts/snapshot-stocks.mjs
 - **State.** `lib/store.ts` (zustand, persisted to localStorage) mirrors the demo's state object. Mock-only for now; money state moves server-side in milestones 2–4.
 - **Plan maths.** `lib/plan.ts` has `fit()` and `buildPlan()`, ported from the demo and deterministic. The model will never pick weights.
 - **Stock catalog.** `lib/stocks.ts` reads `data/base-stocks.snapshot.json`, a snapshot of the 415 Coinbase tokenized stocks on Base. stonkpet only trades the 13 that have a Chainlink NAV feed. Anything else is "listed, but no live price, so I won't trade it".
+- **Wallet.** wagmi + viem with the Base Account connector (`lib/wagmi.ts`): passkey sign-in, no seed phrase. OnchainKit is retired per the Base docs. Every transaction goes through `useSponsoredCalls()` (`lib/wallet.ts`), which sends EIP-5792 `wallet_sendCalls` with the `paymasterService` capability, pointed at our proxy `app/api/paymaster/route.ts` (forwards only `pm_getPaymasterStubData` / `pm_getPaymasterData` for our chain, so the CDP key stays server-side), plus the ERC-8021 Builder Code suffix (`lib/builderCode.ts`). Balances are read onchain: USDC, ETH, and ETH/USD from Chainlink, treated as unknown if stale.
+- **Network switch.** `NEXT_PUBLIC_CHAIN=sepolia|mainnet` in `lib/chain.ts`. All addresses were checked onchain.
 - **Chat.** `lib/mockBrain.ts` is the demo's keyword brain, used as the fallback until the Claude agent lands in milestone 5. Money-moving replies become yes/hold-on cards.
 
 ## What was built during the hackathon

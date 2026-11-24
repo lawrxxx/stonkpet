@@ -1,9 +1,12 @@
 "use client";
 import { held, nm, useStore } from "@/lib/store";
 import { nameOf } from "@/lib/stocks";
+import { CHAIN, short } from "@/lib/chain";
+import { useWallet } from "@/lib/wallet";
 
 export default function Portfolio() {
   const s = useStore();
+  const wallet = useWallet();
   if (!s.plan) return <section className="scr on" />;
   const w = held(s);
   const g = Math.min(100, Math.round(s.total / 10));
@@ -41,6 +44,18 @@ export default function Portfolio() {
         <button className="row" onClick={() => s.open("auto")}><span className="grow">Autopilot</span><span className="mut sm">{on} on</span><span className="chev" aria-hidden="true">›</span></button>
         <button className="row" onClick={() => s.open("mandate")}><span className="grow">What you asked for</span><span className="chev" aria-hidden="true">›</span></button>
         <button className="row" onClick={() => s.open("activity")}><span className="grow">What {nm(s)}&apos;s been up to</span><span className="chev" aria-hidden="true">›</span></button>
+      </div>
+      <div className="list" style={{ marginTop: 16 }}>
+        {wallet.connected && wallet.address ? (<>
+          <button className="row" onClick={() => s.open("deposit")}>
+            <span className="grow">Your wallet</span><span className="mut sm">{short(wallet.address)} · {CHAIN.name}</span><span className="chev" aria-hidden="true">›</span>
+          </button>
+          <button className="row" onClick={wallet.signOut}><span className="grow">Sign out</span></button>
+        </>) : (
+          <button className="row" onClick={() => s.open("wallet")}>
+            <span className="grow">Sign in with a passkey</span><span className="mut sm">Using sample money</span><span className="chev" aria-hidden="true">›</span>
+          </button>
+        )}
       </div>
       <p className="foot">
         Not financial advice. stonkpet is for adults outside the US. Coinbase tokenized stocks are only available in eligible jurisdictions.

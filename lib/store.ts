@@ -14,7 +14,7 @@ export type Tok = "USDC" | "ETH" | "cbBTC";
 export type Pers = "calm" | "balanced" | "spicy";
 export type SheetKey =
   | "deposit" | "short" | "cashout" | "bio" | "receipt" | "basket" | "confirm"
-  | "note" | "share" | "auto" | "mandate" | "activity" | "eligible";
+  | "note" | "share" | "auto" | "mandate" | "activity" | "eligible" | "wallet";
 
 export type LogEntry = { what: string; when: string; detail: string; tx: string | null; amount: number | null; time: string };
 
@@ -75,6 +75,8 @@ type State = {
   guess: string[] | null;
   ci: number;
   sheet: SheetKey | null;
+  /** where to go after the eligibility check / passkey sign-in */
+  next: "name" | "signin" | "approve" | "home" | null;
 };
 
 type Actions = {
@@ -99,7 +101,7 @@ const initial: State = {
   ready: false, eligible: false, name: "Mochi", pers: "balanced", cap: 30, ask: 25,
   brief: "AI and robots. Skip Tesla.", diet: "ai", skipCrypto: false, amt: 20, tok: "USDC", why: "facts",
   trimmed: null, wx: "sun", total: 248.6, wallet: { USDC: 120, ETH: 340, cbBTC: 90 }, paused: false, weekly: 10,
-  auto: { reb: true, weekly: true, tp: false }, log: [], plan: null, co: 25, rc: 0, msgs: [], guess: null, ci: 0, sheet: null,
+  auto: { reb: true, weekly: true, tp: false }, log: [], plan: null, co: 25, rc: 0, msgs: [], guess: null, ci: 0, sheet: null, next: null,
 };
 
 /** Current holdings as fractions. Before the trim is answered, the lead sits 6 points over plan (the demo's scripted drift). */
@@ -272,7 +274,7 @@ export const useStore = create<Store>()(
       name: "stonkpet-mock",
       version: 1,
       storage: createJSONStorage(() => localStorage),
-      partialize: ({ sheet, ready, ...rest }) => rest,
+      partialize: ({ sheet, ready, next, ...rest }) => rest,
       skipHydration: true,
     },
   ),

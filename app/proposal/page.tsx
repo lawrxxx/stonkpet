@@ -1,5 +1,6 @@
 "use client";
 import { useGo } from "@/components/nav";
+import { useWallet } from "@/lib/wallet";
 import { nm, useStore } from "@/lib/store";
 import { nameOf, ROBOT_TICKERS, TRADABLE_COUNT, LISTED_COUNT } from "@/lib/stocks";
 
@@ -8,6 +9,7 @@ const whyTabs = [["facts", "Facts"], ["assume", "Assuming"], ["opinion", "My tak
 export default function Proposal() {
   const s = useStore();
   const go = useGo();
+  const wallet = useWallet();
   const p = s.plan;
   if (!p) return <section className="scr on" />;
   const n = Object.keys(p.w).length, lead = nameOf(p.lead);
@@ -61,7 +63,10 @@ export default function Proposal() {
       </div>
       <p className="mut" style={{ fontSize: 12, marginTop: 14 }}>Sample data for this demo.</p>
       <div style={{ minHeight: 24 }} />
-      <button className="btn" onClick={() => { s.approve(); go("home"); }}>Looks good</button>
+      <button className="btn" onClick={() => {
+        if (wallet.connected) { s.approve(); go("home"); return; }
+        useStore.setState({ next: "approve" }); s.open("wallet");
+      }}>Looks good</button>
       <button className="link" style={{ alignSelf: "center", marginTop: 4 }} onClick={() => go("brief")}>Change what I said</button>
     </section>
   );

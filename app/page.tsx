@@ -18,7 +18,11 @@ export default function Welcome() {
       <h1 className="c hero" style={{ marginTop: 26 }}>Your money, but make it a pet</h1>
       <p className="mut c" style={{ marginTop: 12, fontSize: 17 }}>Tell it what you&apos;re into. Feed it. Watch it grow.</p>
       <div className="grow" style={{ minHeight: 20, maxHeight: 60 }} />
-      <button className="btn" onClick={() => (eligible ? go("name") : open("eligible"))}>Get started</button>
+      <button className="btn" onClick={() => { useStore.setState({ next: null }); if (eligible) go("name"); else open("eligible"); }}>Get started</button>
+      <button className="link" style={{ alignSelf: "center", marginTop: 4 }}
+        onClick={() => { useStore.setState({ next: "home" }); open(eligible ? "wallet" : "eligible"); }}>
+        I already have a pet
+      </button>
     </section>
   );
 }

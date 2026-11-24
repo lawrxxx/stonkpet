@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { ClientProviders } from "@/components/ClientProviders";
 import { Shell } from "@/components/Shell";
 import "./globals.css";
 
@@ -18,7 +19,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet" />
       </head>
       <body>
-        <Shell>{children}</Shell>
+        <ClientProviders>
+          <Shell>{children}</Shell>
+        </ClientProviders>
       </body>
     </html>
   );

@@ -5,6 +5,8 @@ import { money, nm, useStore, type SheetKey } from "@/lib/store";
 import { nameOf } from "@/lib/stocks";
 import { Pet } from "./Pet";
 import { useGo } from "./nav";
+import { useWallet } from "@/lib/wallet";
+import { Deposit, SignIn } from "./WalletSheets";
 
 const ADDR = "0x7a3F…9C1e";
 const ADDR_FULL = "0x7a3F000000000000000000000000000000009C1e";
@@ -35,6 +37,7 @@ function Body({ k, onSettled }: { k: SheetKey; onSettled: () => void }) {
   const p = s.plan;
   const [added, setAdded] = useState(false);
   const [bioDone, setBioDone] = useState<number | null>(null);
+  const wallet = useWallet();
 
   useEffect(() => {
     if (k !== "bio") return;
@@ -46,7 +49,10 @@ function Body({ k, onSettled }: { k: SheetKey; onSettled: () => void }) {
   switch (k) {
     case "eligible":
       return <Eligible />;
+    case "wallet":
+      return <SignIn />;
     case "deposit":
+      if (wallet.connected) return <Deposit />;
       return (<>
         <h2 id="sheetT">Add money</h2>
         <p className="mut sm">Send crypto to your {name} wallet, then feed it.</p>
@@ -213,7 +219,12 @@ function Eligible() {
       <label className="row chk"><input type="checkbox" checked={region} onChange={(e) => setRegion(e.target.checked)} /><span>I don&apos;t live in the US, and I&apos;m in a country where Coinbase tokenized stocks are allowed</span></label>
     </div>
     <button className="btn" style={{ marginTop: 16 }} disabled={!age || !region}
-      onClick={() => { useStore.setState({ eligible: true }); go("name"); }}>
+      onClick={() => {
+        const next = useStore.getState().next;
+        useStore.setState({ eligible: true });
+        if (next === "home") useStore.getState().open("wallet");
+        else go("name");
+      }}>
       Let&apos;s go
     </button>
   </>);
@@ -236,7 +247,7 @@ export function Sheets() {
       <div className="grab" />
       {k && <Body key={k + opens} k={k} onSettled={() => setSettled(true)} />}
       <button className="btn" ref={closeRef} style={{ marginTop: 22 }} onClick={close}>
-        {k && !settled && ["confirm", "cashout", "short", "bio", "eligible"].includes(k) ? "Cancel" : "Done"}
+        {k && !settled && ["confirm", "cashout", "short", "bio", "eligible", "wallet"].includes(k) ? "Cancel" : "Done"}
       </button>
     </div>
   );
