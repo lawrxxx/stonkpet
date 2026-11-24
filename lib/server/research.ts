@@ -3,6 +3,7 @@ import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
 import { cashOf, fit, leadOf, type Weights } from "@/lib/plan";
 import { dexTradable, DEX_RULES, type DexStock } from "./dexPrices";
+import { nameOf } from "@/lib/stocks";
 import { listStocks, type LiveStock } from "./stocksApi";
 
 /**
@@ -206,7 +207,7 @@ export async function runResearch(input: ResearchInput): Promise<Proposal> {
   const weights = fit(raw, input.maxPct);
   const cash = cashOf(weights);
   const lead = leadOf(weights);
-  const name = (t: string) => byTicker.get(t)?.name.replace(/,? (Inc|Corp|Corporation|PBC|Ltd|Holdings|Group|Company)\.?$/i, "") ?? t;
+  const name = nameOf;
 
   const flags: Flag[] = [];
   for (const u of parsed.unavailable) flags.push({ kind: "unavailable", title: u.title, body: u.note });

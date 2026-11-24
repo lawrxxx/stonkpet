@@ -38,6 +38,8 @@ const SHORT: Record<string, string> = {
   NFLX: "Netflix", AMD: "AMD", PLTR: "Palantir", HOOD: "Robinhood", PYPL: "PayPal",
   UBER: "Uber", ISRG: "Intuitive Surgical", SYM: "Symbotic", TER: "Teradyne",
   ROK: "Rockwell Automation", PATH: "UiPath",
+  MU: "Micron", AVGO: "Broadcom", TTWO: "Take-Two", ORCL: "Oracle", BE: "Bloom Energy", MRVL: "Marvell",
+  MRNA: "Moderna", LLY: "Eli Lilly", MCD: "McDonald's", SKHY: "SK Hynix", SERV: "Serve Robotics",
 };
 export const nameOf = (t: string) =>
   SHORT[t] ?? byTicker.get(t)?.name.replace(/,? (Inc|Corp|Corporation|PBC|Ltd|plc|Holdings|Group)\.?$/i, "") ?? t;
@@ -74,6 +76,9 @@ export const LISTED_ALIAS: Record<string, string> = {
   netflix: "NFLX", amd: "AMD", palantir: "PLTR", robinhood: "HOOD", paypal: "PYPL", uber: "UBER",
   "intuitive surgical": "ISRG", symbotic: "SYM", teradyne: "TER", rockwell: "ROK", uipath: "PATH",
   disney: "DIS", nike: "NKE", berkshire: "BRK.B",
+  micron: "MU", broadcom: "AVGO", oracle: "ORCL", marvell: "MRVL", moderna: "MRNA", lilly: "LLY",
+  "eli lilly": "LLY", mcdonald: "MCD", "mcdonald's": "MCD", "take-two": "TTWO", "sk hynix": "SKHY", hynix: "SKHY",
+  "bloom energy": "BE", "serve robotics": "SERV",
 };
 
 /** Not on Base at all (checked against the snapshot). */
