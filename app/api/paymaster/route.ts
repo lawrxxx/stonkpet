@@ -13,9 +13,18 @@ const rpcError = (id: unknown, code: number, message: string, status = 400) =>
 
 /** Health check for /check: says whether things are configured, never the values. */
 export async function GET() {
+  const url = process.env.CDP_PAYMASTER_URL;
+  // Only the network segment of the CDP URL (…/rpc/v1/<network>/<key>), never the key.
+  let paymasterNetwork: string | null = null;
+  if (url) {
+    try { paymasterNetwork = new URL(url).pathname.split("/").filter(Boolean)[2] ?? "unknown"; } catch { paymasterNetwork = "invalid URL"; }
+  }
+  const expected = CHAIN.id === 84532 ? "base-sepolia" : "base";
   return Response.json({
     chainId: CHAIN.id,
-    paymasterConfigured: !!process.env.CDP_PAYMASTER_URL,
+    paymasterConfigured: !!url,
+    paymasterNetwork,
+    paymasterNetworkOk: paymasterNetwork === expected,
     builderCode: BUILDER_CODE || null,
   });
 }
