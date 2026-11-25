@@ -26,10 +26,16 @@ export async function POST(req: Request) {
 
   const ok = await verifySiweMessage(client, { message, signature, nonce, domain: host }).catch(() => false);
   if (!ok) return Response.json({ error: "invalid", message: "That signature didn't check out." }, { status: 401 });
-  if (!(await consumeNonce(nonce))) return Response.json({ error: "replayed", message: "That sign-in was already used. Try again?" }, { status: 401 });
-
-  const address = parsed.address.toLowerCase() as `0x${string}`;
-  if (dbConfigured()) await upsertUser(address);
-  await setSession(address);
-  return Response.json({ address });
+  try {
+    if (!(await consumeNonce(nonce))) return Response.json({ error: "replayed", message: "That sign-in was already used. Try again?" }, { status: 401 });
+    const address = parsed.address.toLowerCase() as `0x${string}`;
+    if (dbConfigured()) await upsertUser(address);
+    await setSession(address);
+    return Response.json({ address });
+  } catch (e) {
+    // Surface the database error code/message (never secrets) so sign-in failures are diagnosable.
+    const err = e as { code?: string; message?: string };
+    console.error("sign-in failed", e);
+    return Response.json({ error: "server_error", code: err.code ?? null, detail: err.message ?? String(e), message: "Sign-in hit a server problem." }, { status: 500 });
+  }
 }
