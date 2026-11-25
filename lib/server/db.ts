@@ -42,7 +42,9 @@ export async function consumeNonce(nonce: string): Promise<boolean> {
     const { error } = await db().from("auth_nonces").insert({ nonce });
     if (!error) return true;
     if (error.code === "23505") return false; // unique violation: already used
-    throw error;
+    // Table not created yet (migration 0002 not run): fall back to the in-memory check below.
+    if (error.code !== "PGRST205" && error.code !== "42P01") throw error;
+    console.warn("auth_nonces table missing; run supabase/migrations/0002_auth_nonces.sql");
   }
   const now = Date.now();
   for (const [k, t] of usedLocally) if (now - t > 15 * 60_000) usedLocally.delete(k);
