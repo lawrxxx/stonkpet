@@ -1,5 +1,5 @@
 import { createPublicClient, erc20Abi, formatUnits, http } from "viem";
-import { CHAIN, RPC_URL, TOKENS } from "@/lib/chain";
+import { CHAIN, RPC_URL } from "@/lib/chain";
 import { DEPLOYMENT } from "@/lib/deployment";
 import { priceBoard, type PriceBoard } from "./prices";
 
@@ -18,7 +18,7 @@ export async function portfolio(address: `0x${string}`, board?: PriceBoard): Pro
   const entries = Object.entries(DEPLOYMENT.tokens);
   const [balances, usdc] = await Promise.all([
     Promise.all(entries.map(([, token]) => chainClient.readContract({ address: token, abi: erc20Abi, functionName: "balanceOf", args: [address] }).catch(() => null))),
-    chainClient.readContract({ address: TOKENS.USDC.address, abi: erc20Abi, functionName: "balanceOf", args: [address] }).catch(() => null),
+    chainClient.readContract({ address: DEPLOYMENT.usdc, abi: erc20Abi, functionName: "balanceOf", args: [address] }).catch(() => null),
   ]);
   const holdings: Holding[] = [];
   const unpriced: string[] = [];

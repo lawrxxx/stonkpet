@@ -13,9 +13,14 @@ export type Deployment = {
   tokens: Record<string, `0x${string}`>;
 };
 
-export const DEPLOYMENT: Deployment = IS_TESTNET
+/** Server-only override for integration tests against a throwaway deployment (JSON with exchange, usdc, tokens). */
+const override: Deployment | null = (() => {
+  try { return process.env.STONKPET_DEPLOYMENT ? (JSON.parse(process.env.STONKPET_DEPLOYMENT) as Deployment) : null; } catch { return null; }
+})();
+
+export const DEPLOYMENT: Deployment = override ?? (IS_TESTNET
   ? { exchange: (testnet.exchange as `0x${string}` | null) ?? null, usdc: TOKENS.USDC.address, tokens: testnet.tokens as Record<string, `0x${string}`> }
-  : { exchange: null, usdc: TOKENS.USDC.address, tokens: {} }; // mainnet tokens come from the live catalog
+  : { exchange: null, usdc: TOKENS.USDC.address, tokens: {} }); // mainnet tokens come from the live catalog
 
 export const tradingLive = () => !!DEPLOYMENT.exchange && Object.keys(DEPLOYMENT.tokens).length > 0;
 
