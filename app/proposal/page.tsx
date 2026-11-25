@@ -5,6 +5,7 @@ import type { Plan } from "@/lib/plan";
 import { nm, useStore } from "@/lib/store";
 import { LISTED_COUNT, nameOf, ROBOT_TICKERS, TRADABLE_COUNT } from "@/lib/stocks";
 import { useWallet } from "@/lib/wallet";
+import { savePlan } from "@/lib/account";
 
 const WHY = [["facts", "Facts"], ["assume", "Assuming"], ["opinion", "My take"]] as const;
 type Note = { title: string; body: string };
@@ -53,7 +54,7 @@ export default function Proposal() {
   const excl = p.excl.map(nameOf).join(" and ");
 
   const approve = () => {
-    if (wallet.connected) { s.approve(); go("home"); return; }
+    if (wallet.connected) { void savePlan(); s.approve(); go("home"); return; }
     useStore.setState({ next: "approve" });
     s.open("wallet");
   };

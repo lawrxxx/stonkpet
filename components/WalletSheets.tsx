@@ -6,6 +6,7 @@ import { useBalances, useWallet } from "@/lib/wallet";
 import { CopyButton } from "./CopyButton";
 import { Icon } from "./Icon";
 import { useGo } from "./nav";
+import { savePlan } from "@/lib/account";
 
 const fmt = (v: number | null, d = 2) => (v === null ? "…" : v.toFixed(d));
 
@@ -21,7 +22,7 @@ export function SignIn() {
     if (!w.connected) return;
     const next = useStore.getState().next;
     useStore.setState({ next: null });
-    if (next === "approve") { useStore.getState().approve(); go("home"); }
+    if (next === "approve") { void savePlan(); useStore.getState().approve(); go("home"); }
     else if (next === "home") { useStore.getState().ensurePlan(); go("home"); }
     else useStore.getState().close();
   }, [w.connected, go]);

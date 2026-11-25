@@ -5,6 +5,7 @@ import { clock, opensWhen, pct, planDayChange, priceOf } from "@/lib/prices";
 import { money, nm, useStore, type SheetKey } from "@/lib/store";
 import { nameOf } from "@/lib/stocks";
 import { useWallet } from "@/lib/wallet";
+import { useRealPortfolio } from "@/lib/account";
 import { CopyButton } from "./CopyButton";
 import { Icon } from "./Icon";
 import { Pet } from "./Pet";
@@ -39,6 +40,7 @@ function Body({ k, onSettled }: { k: SheetKey; onSettled: () => void }) {
   const s = useStore();
   const go = useGo();
   const wallet = useWallet();
+  const rp = useRealPortfolio();
   const name = nm(s);
   const p = s.plan;
   const [added, setAdded] = useState(false);
@@ -207,6 +209,19 @@ function Body({ k, onSettled }: { k: SheetKey; onSettled: () => void }) {
       </>);
 
     case "activity":
+      if (rp.signedIn && rp.data) return (<>
+        <Head title={`What ${name}'s been up to`} />
+        <div className="list mt-4">
+          {rp.data.activity.length === 0 && <div className="row blk"><p className="strong">Quiet so far</p><p className="t-small muted mt-1">Say yes to a plan and I&apos;ll get going.</p></div>}
+          {rp.data.activity.map((a) => (
+            <div className="row blk" key={a.id}>
+              <div className="between"><span className="strong">{a.title}</span><span className="t-caption muted">{new Date(a.created_at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</span></div>
+              {a.detail && <p className="t-small muted mt-1">{a.detail}</p>}
+              {a.explorer && <a className="src src-link" href={a.explorer} target="_blank" rel="noreferrer">Receipt on Basescan<Icon name="external" size={12} /></a>}
+            </div>
+          ))}
+        </div>
+      </>);
       return (<>
         <Head title={`What ${name}'s been up to`} />
         <div className="list mt-4">

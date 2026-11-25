@@ -1,5 +1,6 @@
 import { BUILDER_CODE } from "@/lib/builderCode";
 import { CHAIN } from "@/lib/chain";
+import { tradingLive } from "@/lib/deployment";
 import { db, dbConfigured } from "@/lib/server/db";
 
 /** true = tables exist and the service key works; false = configured but failing; null = not configured. */
@@ -23,6 +24,8 @@ export async function GET() {
       supabase: dbConfigured(),
       supabaseSchema: await schemaOk(),
       zeroEx: !!process.env.ZERO_EX_API_KEY,
+      priceUpdater: !!process.env.PRICE_UPDATER_KEY,
+      tradingLive: tradingLive(),
     },
     { headers: { "cache-control": "no-store" } },
   );
