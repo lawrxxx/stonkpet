@@ -40,5 +40,5 @@ export async function POST(req: Request) {
   if (error) throw error;
 
   if (!v.ok) return Response.json({ id: data.id, ok: false, code: v.code, reason: v.reason }, { status: 200 });
-  return Response.json({ id: data.id, ok: true, needsApproval: v.needsApproval, queueUntilOpen: v.queueUntilOpen, notes: v.notes });
+  return Response.json({ id: data.id, ok: true, needsApproval: v.needsApproval, queueUntilOpen: v.queueUntilOpen, afterHours: v.afterHours, notes: v.notes });
 }

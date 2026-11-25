@@ -183,3 +183,35 @@ describe("DEX-priced stocks (no Chainlink feed)", () => {
     expect(refused({ type: "sell", ticker: "NFLX", amountUsd: 5 }, s).code).toBe("MARKET_CLOSED");
   });
 });
+
+describe("after-hours trading (opt-in)", () => {
+  const night = (p?: (s: Snapshot) => void) => with_((s) => {
+    for (const k in s.feeds) s.feeds[k] = "closed";
+    s.afterHours = { NVDA: { price: 151, ref: 150 }, MSFT: { price: 495, ref: 494 }, GOOGL: { price: 278, ref: 277 }, META: { price: 590, ref: 589 } };
+    p?.(s);
+  });
+  it("is off by default: feeds queue, other trades wait", () => {
+    const v = check({ type: "feed", amountUsd: 10 }, night());
+    expect(v.ok && v.queueUntilOpen && !v.afterHours).toBe(true);
+    expect(refused({ type: "sell", ticker: "MSFT", amountUsd: 5 }, night()).code).toBe("MARKET_CLOSED");
+  });
+  it("when on, trades now at the exchange price and always asks first", () => {
+    const v = check({ type: "feed", amountUsd: 10 }, night((s) => { s.rules.tradeAfterHours = true; }));
+    expect(v.ok && v.afterHours && !v.queueUntilOpen && v.needsApproval).toBe(true);
+    expect(v.ok && v.notes.join(" ")).toMatch(/exchange price, at most 0\.7% from the last close/);
+  });
+  it("refuses when the exchange price is more than 2% from the last close", () => {
+    const s = night((s) => { s.rules.tradeAfterHours = true; s.afterHours!.MSFT = { price: 510, ref: 494 }; });
+    const v = refused({ type: "sell", ticker: "MSFT", amountUsd: 5 }, s);
+    expect(v.code).toBe("AFTER_HOURS_GAP");
+    expect(v.reason).toMatch(/3\.2% above its last close/);
+  });
+  it("refuses when there's no live exchange price", () => {
+    const s = night((s) => { s.rules.tradeAfterHours = true; delete s.afterHours!.MSFT; });
+    expect(refused({ type: "sell", ticker: "MSFT", amountUsd: 5 }, s).code).toBe("NO_AFTER_HOURS_PRICE");
+  });
+  it("still never trades on a frozen feed", () => {
+    const s = night((s) => { s.rules.tradeAfterHours = true; s.feeds.NVDA = "stale"; });
+    expect(refused({ type: "feed", amountUsd: 10 }, s).code).toBe("PRICE_FROZEN");
+  });
+});

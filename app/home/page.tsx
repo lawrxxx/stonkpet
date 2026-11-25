@@ -33,7 +33,9 @@ export default function Home() {
   const mood = {
     sun: "Feeling good. Fed 4 weeks in a row.",
     rain: "A bit gloomy. Holding steady, not panicking.",
-    night: b && !preview ? `Asleep. The market opens ${opensWhen(b)}, so no trades till then.` : "Asleep. Prices freeze at night, so no trades till morning.",
+    night: s.auto.afterHours
+      ? "Night, but I'm awake. After-hours trading is on, so I can still eat at exchange prices."
+      : b && !preview ? `Asleep. The market opens ${opensWhen(b)}, so no trades till then.` : "Asleep. Prices freeze at night, so no trades till morning.",
   }[w];
   const label = preview ? `${LBL[w]} · preview` : b ? LBL[w] : "Checking the market…";
 
@@ -41,7 +43,7 @@ export default function Home() {
     <section className="scr" aria-label="Home">
       <div className={"scene fluid" + (w === "night" ? " sleep" : "")}>
         <SceneSvg w={w} />
-        <div className="pet"><Pet mood={w === "night" ? "sleep" : w === "rain" ? "sad" : "happy"} size={150} /></div>
+        <div className="pet"><Pet mood={w === "night" ? (s.auto.afterHours ? "idle" : "sleep") : w === "rain" ? "sad" : "happy"} size={150} /></div>
         <button className="lbl" onClick={() => s.set({ wxPreview: CYCLE[(CYCLE.indexOf(s.wxPreview) + 1) % CYCLE.length] })}
           aria-label={`${label}. Tap to preview other weather.`}>
           {label}<Icon name="refresh" size={14} stroke={2.4} />

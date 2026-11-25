@@ -36,12 +36,12 @@ export async function POST(_req: Request, ctx: { params: Promise<{ id: string }>
     return Response.json({ ok: true, queued: true, notes: v.notes });
   }
 
-  const legs = feedLegs(u.plan.weights, u.plan.lead, a.params.amountUsd, pf.board);
+  const legs = feedLegs(u.plan.weights, u.plan.lead, a.params.amountUsd, pf.board, v.afterHours);
   const priceTx = IS_TESTNET ? await pushPrices(legs) : null;
   const calls = feedCalls(legs);
   await d.from("actions").update({
     status: "approved", decided_at: new Date().toISOString(),
-    params: { ...a.params, legs: legs.map((l) => ({ ticker: l.ticker, usdc: l.usdc.toString(), price: Number(l.priceE8) / 1e8 })), priceTx },
+    params: { ...a.params, afterHours: v.afterHours, legs: legs.map((l) => ({ ticker: l.ticker, usdc: l.usdc.toString(), price: Number(l.priceE8) / 1e8 })), priceTx },
   }).eq("id", id);
 
   return Response.json({ ok: true, calls, legs: legs.map((l) => ({ ticker: l.ticker, usd: Number(l.usdc) / 1e6, price: Number(l.priceE8) / 1e8 })) });

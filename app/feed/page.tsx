@@ -111,7 +111,7 @@ export default function Feed() {
 
   const finishSample = () => {
     const st = useStore.getState();
-    setDone({ amt: st.amt, tok: st.tok, n: Object.keys(st.plan!.w).length, night: st.wx === "night", at: Date.now() });
+    setDone({ amt: st.amt, tok: st.tok, n: Object.keys(st.plan!.w).length, night: st.wx === "night" && !st.auto.afterHours, at: Date.now() });
     setChomp(true);
     setTimeout(() => setChomp(false), 900);
   };
@@ -172,7 +172,7 @@ export default function Feed() {
         if (s.amt > s.ask) return s.open("confirm");
         s.doFeed(); finishSample();
       }}>
-        {night ? `Save $${s.amt} for the morning` : `Feed $${s.amt}`}
+        {night ? (s.auto.afterHours ? `Feed $${s.amt} after hours` : `Save $${s.amt} for the morning`) : `Feed $${s.amt}`}
       </button>
     </section>
   );

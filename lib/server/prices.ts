@@ -1,7 +1,7 @@
 import { createPublicClient, http, parseAbi } from "viem";
 import { base } from "viem/chains";
 import { feedStatus, lastSessionOpen, marketState, type FeedStatus, type MarketState } from "@/lib/market";
-import { dexTradable } from "./dexPrices";
+import { dexEligible, dexQuotes, dexTradable } from "./dexPrices";
 import { listStocks } from "./stocksApi";
 
 /**
@@ -35,6 +35,8 @@ export type Price = {
   /** DEX pool depth and activity, for dex-priced stocks. */
   liquidityUsd?: number;
   volume24hUsd?: number;
+  /** While the market is closed: the live exchange price for a Chainlink-priced stock (what an after-hours trade settles at). */
+  afterHoursPrice?: number;
   multiplier: number;
   price: number | null;
   updatedAt: string | null;
@@ -128,6 +130,16 @@ export async function priceBoard(now = new Date()): Promise<PriceBoard> {
         price, updatedAt: new Date(updatedAt * 1000).toISOString(), status: feedStatus(updatedAt, now, market, paused), dayChangePct };
     }),
   );
+
+  // After hours, officially priced stocks still trade in Base pools. Attach that live price
+  // (only from pools deep and active enough to trust) for opt-in after-hours trading.
+  if (!market.open) {
+    const quotes = await dexQuotes(prices.map((p) => p.address));
+    for (const p of prices) {
+      const q = quotes.get(p.address.toLowerCase());
+      if (dexEligible(q)) p.afterHoursPrice = q.price;
+    }
+  }
 
   // Unofficial tier: deep, active DEX pools for stocks without a feed. Pools trade 24/7, but we
   // follow US market hours for them too, so the same "closed" rule applies.

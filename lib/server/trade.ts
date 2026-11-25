@@ -28,6 +28,7 @@ export async function loadUser(userId: string): Promise<UserState> {
       askAboveUsd: Number(r?.ask_above_usd ?? 25),
       excluded: r?.excluded ?? [],
       paused: r?.paused ?? false,
+      tradeAfterHours: !!r?.autopilot?.afterHours,
     },
     plan: p ? { id: p.id, weights: p.weights, lead: p.lead, priceSource: p.price_source ?? {} } : null,
   };
@@ -51,13 +52,26 @@ export function snapshotFor(pf: Portfolio, u: UserState): Snapshot {
     names: Object.fromEntries(b.prices.map((p) => [p.ticker, nameOf(p.ticker)])),
     priceSource: Object.fromEntries(b.prices.map((p) => [p.ticker, p.source])),
     poolLiquidityUsd: Object.fromEntries(b.prices.filter((p) => p.liquidityUsd).map((p) => [p.ticker, p.liquidityUsd!])),
+    afterHours: b.market.open ? undefined : Object.fromEntries(
+      b.prices.flatMap((p): [string, { price: number; ref: number | null }][] =>
+        p.source === "dex" && p.price ? [[p.ticker, { price: p.price, ref: null }]]
+        : p.afterHoursPrice && p.price ? [[p.ticker, { price: p.afterHoursPrice, ref: p.price }]]
+        : []),
+    ),
   };
+}
+
+/** The price a trade settles at: live exchange price after hours (opt-in), otherwise the board price. */
+export function tradePrice(board: PriceBoard, ticker: string, afterHours: boolean): number | null {
+  const p = board.prices.find((x) => x.ticker === ticker);
+  if (!p) return null;
+  return afterHours && p.source === "chainlink" ? p.afterHoursPrice ?? null : p.price;
 }
 
 export type Leg = { ticker: string; token: `0x${string}`; usdc: bigint; priceE8: bigint; minOut: bigint };
 
 /** Split a USDC amount across plan weights (6dp, rounding remainder to the lead) and quote each leg. */
-export function feedLegs(weights: Weights, lead: string, amountUsd: number, board: PriceBoard): Leg[] {
+export function feedLegs(weights: Weights, lead: string, amountUsd: number, board: PriceBoard, afterHours = false): Leg[] {
   const total = parseUnits(amountUsd.toFixed(6), 6);
   const sum = Object.values(weights).reduce((a, b) => a + b, 0);
   const tickers = Object.keys(weights).filter((t) => weights[t] > 0);
@@ -66,17 +80,17 @@ export function feedLegs(weights: Weights, lead: string, amountUsd: number, boar
   for (const t of tickers) {
     const usdc = (total * BigInt(Math.round((weights[t] / sum) * 1e6))) / BigInt(1e6);
     used += usdc;
-    legs.push(quoteLeg(t, usdc, board));
+    legs.push(quoteLeg(t, usdc, board, afterHours));
   }
   const rest = total - used;
   const li = legs.findIndex((l) => l.ticker === lead);
-  if (rest > BigInt(0) && li >= 0) legs[li] = quoteLeg(lead, legs[li].usdc + rest, board);
+  if (rest > BigInt(0) && li >= 0) legs[li] = quoteLeg(lead, legs[li].usdc + rest, board, afterHours);
   return legs.filter((l) => l.usdc > BigInt(0));
 }
 
-function quoteLeg(ticker: string, usdc: bigint, board: PriceBoard): Leg {
+function quoteLeg(ticker: string, usdc: bigint, board: PriceBoard, afterHours: boolean): Leg {
   const token = DEPLOYMENT.tokens[ticker];
-  const price = board.prices.find((p) => p.ticker === ticker)?.price;
+  const price = tradePrice(board, ticker, afterHours);
   if (!token || !price) throw new Error(`No token or price for ${ticker}`);
   const priceE8 = BigInt(Math.round(price * 1e8));
   const out = (usdc * BigInt(1e10)) / priceE8;

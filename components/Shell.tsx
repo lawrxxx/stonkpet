@@ -6,6 +6,7 @@ import { NEEDS_PLAN, SCREENS, TABS, useGo, type Screen } from "./nav";
 import { Icon } from "./Icon";
 import { Sheets } from "./Sheets";
 import { marketWeather, usePriceBoard } from "@/lib/prices";
+import { useRealPortfolio } from "@/lib/account";
 
 export function useScreen(): Screen {
   const p = usePathname().replace(/^\//, "") || "welcome";
@@ -52,6 +53,14 @@ export function Shell({ children }: { children: ReactNode }) {
     if (sheet) lastFocus.current = document.activeElement as HTMLElement;
     else lastFocus.current?.focus?.();
   }, [sheet]);
+
+  // Signed in: the after-hours setting lives on the server; mirror it locally.
+  const serverAfterHours = useRealPortfolio().data?.tradeAfterHours;
+  useEffect(() => {
+    if (serverAfterHours === undefined) return;
+    const s = useStore.getState();
+    if (!!s.auto.afterHours !== serverAfterHours) s.set({ auto: { ...s.auto, afterHours: serverAfterHours } });
+  }, [serverAfterHours]);
 
   // The weather is the market: live prices drive it unless the user is previewing.
   const board = usePriceBoard().data ?? null;

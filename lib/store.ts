@@ -73,7 +73,7 @@ type State = {
   wallet: Record<Tok, number>;
   paused: boolean;
   weekly: number;
-  auto: { reb: boolean; weekly: boolean; tp: boolean };
+  auto: { reb: boolean; weekly: boolean; tp: boolean; afterHours?: boolean };
   log: LogEntry[];
   plan: Plan | null;
   co: number;
@@ -112,7 +112,7 @@ const initial: State = {
   ready: false, eligible: false, name: "Mochi", pers: "balanced", cap: 30, ask: 25,
   brief: "AI and robots. Skip Tesla.", diet: "ai", skipCrypto: false, amt: 20, tok: "USDC", why: "facts",
   trimmed: null, wx: "sun", wxPreview: null, board: null, research: { status: "idle" }, total: 248.6, wallet: { USDC: 120, ETH: 340, cbBTC: 90 }, paused: false, weekly: 10,
-  auto: { reb: true, weekly: true, tp: false }, log: [], plan: null, co: 25, rc: 0, msgs: [], guess: null, ci: 0, sheet: null, next: null,
+  auto: { reb: true, weekly: true, tp: false, afterHours: false }, log: [], plan: null, co: 25, rc: 0, msgs: [], guess: null, ci: 0, sheet: null, next: null,
 };
 
 /** Current holdings as fractions. Before the trim is answered, the lead sits 6 points over plan (the demo's scripted drift). */
@@ -277,7 +277,7 @@ export const useStore = create<Store>()(
           const s = get();
           const n = Object.keys(s.plan!.w).length;
           set({ sheet: null, wallet: { ...s.wallet, [s.tok]: s.wallet[s.tok] - s.amt }, total: s.total + s.amt });
-          const night = s.wx === "night";
+          const night = s.wx === "night" && !s.auto.afterHours;
           get().addLog(
             night ? "Saved a feed" : "Bought " + n + " stocks",
             `You fed $${s.amt} of ${s.tok}${s.tok !== "USDC" ? ". Swapped it for stocks on Base and" : ","} split it the way we planned.${night ? " Buying in the morning." : ""}`,

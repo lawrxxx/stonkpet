@@ -18,7 +18,7 @@ export function useSession() {
 
 export type RealHolding = { ticker: string; token: string; units: number; priceUsd: number | null; valueUsd: number | null; source: "chainlink" | "dex" | null };
 export type Receipt = { id: string; title: string; detail: string | null; amount_usd: number | null; tx_hash: string | null; created_at: string; explorer: string | null };
-export type RealPortfolio = { tradingLive: boolean; holdings: RealHolding[]; stocksUsd: number; walletUsdc: number | null; activity: Receipt[] };
+export type RealPortfolio = { tradingLive: boolean; holdings: RealHolding[]; stocksUsd: number; walletUsdc: number | null; activity: Receipt[]; tradeAfterHours: boolean };
 
 /** Real holdings and receipts for the signed-in wallet. Disabled (data undefined) when signed out. */
 export function useRealPortfolio() {

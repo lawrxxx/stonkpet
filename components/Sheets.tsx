@@ -192,6 +192,20 @@ function Body({ k, onSettled }: { k: SheetKey; onSettled: () => void }) {
           <Switch id="reb" on={s.auto.reb} label="Fix the mix when one stock gets too big" onToggle={() => s.set({ auto: { ...s.auto, reb: !s.auto.reb } })} />
           <Switch id="weekly" on={s.auto.weekly} label={`Feed $${s.weekly} every Friday`} onToggle={() => s.set({ auto: { ...s.auto, weekly: !s.auto.weekly } })} />
           <Switch id="tp" on={s.auto.tp} label="When ETH is up 20%, move 10% of the gain into stocks" onToggle={() => s.set({ auto: { ...s.auto, tp: !s.auto.tp } })} />
+          <div className="row blk">
+            <div className="between" style={{ alignItems: "center" }}>
+              <span id="ahL">Trade outside market hours</span>
+              <button className="sw" role="switch" aria-checked={!!s.auto.afterHours} aria-labelledby="ahL" aria-describedby="ahD"
+                onClick={() => {
+                  const on = !s.auto.afterHours;
+                  s.set({ auto: { ...s.auto, afterHours: on } });
+                  if (rp.signedIn) void fetch("/api/rules", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ tradeAfterHours: on }) }).then(() => rp.refetch());
+                }}><span /></button>
+            </div>
+            <p className="t-small muted mt-1" id="ahD">
+              Tokenized stocks trade around the clock on Base. When the market&apos;s closed I&apos;ll use the exchange price, but only if it&apos;s within 2% of the last official close, and I&apos;ll always ask first. Frozen prices are still a hard no.
+            </p>
+          </div>
         </div>
         <p className="t-small muted mt-4">Goal: $1,000 by June. {name} will nudge you if you fall behind.</p>
       </>);

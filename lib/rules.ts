@@ -23,6 +23,8 @@ export type Rules = {
   askAboveUsd: number; // amounts above this need an explicit yes
   excluded: string[]; // tickers the user never wants
   paused: boolean;
+  /** Opt-in: trade while the US market is closed, at live exchange prices (never on a frozen feed). */
+  tradeAfterHours?: boolean;
 };
 
 export type Snapshot = {
@@ -46,7 +48,15 @@ export type Snapshot = {
   priceSource?: Record<string, "chainlink" | "dex">;
   /** DEX pool liquidity in USD, for dex-priced stocks. */
   poolLiquidityUsd?: Record<string, number>;
+  /**
+   * After hours: the live exchange price for each stock, and the last official close
+   * (Chainlink) it's compared against. ref is null for stocks with no official feed.
+   */
+  afterHours?: Record<string, { price: number; ref: number | null }>;
 };
+
+/** After hours, an exchange price this far from the last official close is refused. */
+export const MAX_AFTER_HOURS_GAP = 0.02;
 
 /** A single trade in a DEX-priced stock may be at most this share of its pool. */
 export const MAX_POOL_SHARE = 0.01;
@@ -54,7 +64,8 @@ export const MAX_POOL_SHARE = 0.01;
 export type Code =
   | "INVALID_AMOUNT" | "NOT_LISTED" | "NO_PRICE_FEED" | "EXCLUDED" | "PAUSED"
   | "MARKET_CLOSED" | "PRICE_FROZEN" | "OVER_MAX" | "INSUFFICIENT_FUNDS" | "BALANCE_UNKNOWN"
-  | "NOT_HELD" | "NOT_ENOUGH_HELD" | "ALREADY_HELD" | "TOO_CONCENTRATED" | "OUT_OF_RANGE" | "TOO_BIG_FOR_POOL";
+  | "NOT_HELD" | "NOT_ENOUGH_HELD" | "ALREADY_HELD" | "TOO_CONCENTRATED" | "OUT_OF_RANGE" | "TOO_BIG_FOR_POOL"
+  | "AFTER_HOURS_GAP" | "NO_AFTER_HOURS_PRICE";
 
 export type Verdict =
   | {
@@ -63,6 +74,8 @@ export type Verdict =
       needsApproval: boolean;
       /** Valid, but has to wait for the market to open (feeds only). Never settles on a closed or frozen price. */
       queueUntilOpen: boolean;
+      /** Runs now while the market is closed, at live exchange prices (the user opted in). */
+      afterHours: boolean;
       notes: string[];
     }
   | { ok: false; code: Code; reason: string };
@@ -85,11 +98,11 @@ export function check(a: Action, s: Snapshot): Verdict {
   if (a.type === "setMax") {
     if (!Number.isFinite(a.pct) || a.pct < MAX_RANGE.min || a.pct > MAX_RANGE.max)
       return refuse("OUT_OF_RANGE", `Your max has to be between ${MAX_RANGE.min}% and ${MAX_RANGE.max}%. Lower and I can't build a plan, higher and one stock could sink you.`);
-    return { ok: true, needsApproval: true, queueUntilOpen: false, notes };
+    return { ok: true, needsApproval: true, queueUntilOpen: false, afterHours: false, notes };
   }
   if (a.type === "setWeeklyFeed") {
     if (!(a.amountUsd > 0)) return refuse("INVALID_AMOUNT", "The weekly amount has to be more than $0.");
-    return { ok: true, needsApproval: true, queueUntilOpen: false, notes };
+    return { ok: true, needsApproval: true, queueUntilOpen: false, afterHours: false, notes };
   }
 
   // --- every trade from here on ---
@@ -114,18 +127,36 @@ export function check(a: Action, s: Snapshot): Verdict {
     if (bad) return refuse("EXCLUDED", `You told me never to buy ${name(bad)}. Take it off your "never buy" list first if you've changed your mind.`);
   }
 
-  // Market hours and frozen feeds. Feeds may queue for the open; anything else waits.
+  // Market hours and frozen feeds. A frozen feed always stops the trade. A closed market
+  // queues feeds (and blocks other trades), unless the user opted into after-hours trading:
+  // then it runs at the live exchange price, within a gap of the last official close.
   let queueUntilOpen = false;
+  let afterHours = false;
   for (const t of touched) {
     const st = s.feeds[t] ?? "missing";
     if (canTrade(st)) continue;
-    if (st === "closed") {
-      if (a.type === "feed") { queueUntilOpen = true; continue; }
-      return refuse("MARKET_CLOSED", `The market's closed, so I can't trade ${name(t)} right now. Prices freeze until it opens.`);
+    if (st !== "closed")
+      return refuse("PRICE_FROZEN", `${name(t)}'s price feed is ${st === "missing" ? "missing" : "frozen"} right now, maybe for a corporate action. I never trade on a frozen price.`);
+    if (r.tradeAfterHours) {
+      const q = s.afterHours?.[t];
+      if (!q || !(q.price > 0)) return refuse("NO_AFTER_HOURS_PRICE", `There's no live exchange price for ${name(t)} right now, so I'll wait for the open.`);
+      if (q.ref !== null) {
+        const gap = q.price / q.ref - 1;
+        if (Math.abs(gap) > MAX_AFTER_HOURS_GAP + EPS)
+          return refuse("AFTER_HOURS_GAP", `After hours, ${name(t)} is trading ${Math.abs(gap * 100).toFixed(1)}% ${gap > 0 ? "above" : "below"} its last close. That's too far from the official price, so I'll wait for the open.`);
+      }
+      afterHours = true;
+      continue;
     }
-    return refuse("PRICE_FROZEN", `${name(t)}'s price feed is ${st === "missing" ? "missing" : "frozen"} right now, maybe for a corporate action. I never trade on a frozen price.`);
+    if (a.type === "feed") { queueUntilOpen = true; continue; }
+    return refuse("MARKET_CLOSED", `The market's closed, so I can't trade ${name(t)} right now. Prices freeze until it opens.`);
   }
   if (queueUntilOpen) notes.push("Market's closed. This waits for the open.");
+  if (afterHours) {
+    const gaps = touched.map((t) => s.afterHours?.[t]).filter((q): q is { price: number; ref: number } => !!q && q.ref !== null);
+    const worst = gaps.reduce((m, q) => Math.max(m, Math.abs(q.price / q.ref - 1)), 0);
+    notes.push(`Market's closed, so I'll buy at the exchange price${gaps.length ? `, at most ${(worst * 100).toFixed(1)}% from the last close` : ""}.`);
+  }
 
   // Per-action checks.
   switch (a.type) {
@@ -195,6 +226,6 @@ export function check(a: Action, s: Snapshot): Verdict {
     : a.type === "add" ? (a.pct / 100) * total
     : a.type === "drop" ? s.holdings[a.ticker] ?? 0
     : 0;
-  const needsApproval = amount > r.askAboveUsd + EPS || a.type === "add" || a.type === "drop" || dexTouched.length > 0;
-  return { ok: true, needsApproval, queueUntilOpen, notes };
+  const needsApproval = amount > r.askAboveUsd + EPS || a.type === "add" || a.type === "drop" || dexTouched.length > 0 || afterHours;
+  return { ok: true, needsApproval, queueUntilOpen, afterHours, notes };
 }
