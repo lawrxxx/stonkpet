@@ -6,7 +6,14 @@ import { db, dbConfigured } from "@/lib/server/db";
 /** true = tables exist and the service key works; false = configured but failing; null = not configured. */
 async function schemaOk(): Promise<boolean | null> {
   if (!dbConfigured()) return null;
-  try { const { error } = await db().from("users").select("id", { head: true, count: "exact" }).limit(1); return !error; } catch { return false; }
+  // A real GET on each table: HEAD requests don't surface "table not found" errors.
+  try {
+    for (const t of ["users", "plans", "actions", "activity", "rules", "auth_nonces"]) {
+      const { error } = await db().from(t).select("*").limit(1);
+      if (error) return false;
+    }
+    return true;
+  } catch { return false; }
 }
 
 /** Which integrations are configured on this deployment. Booleans only, never values. */
